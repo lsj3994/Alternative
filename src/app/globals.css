@@ -1,0 +1,412 @@
+@import "tailwindcss";
+
+/* ============================================================
+   방구석 백분토론 — 토스(Toss) 스타일 디자인 시스템
+   ============================================================
+   토스 앱 컬러 가이드:
+   - Primary Blue: #0064FF
+   - Dark BG: #191F28 / Surface: #26282D
+   - Light BG: #FFFFFF / Surface: #F2F4F6
+   - 깔끔하고 미니멀한 UI, 큰 라운드 코너, 부드러운 전환
+   ============================================================ */
+
+/* ---- CSS Custom Properties (Light = Default / Toss Style) ---- */
+:root {
+  --bg-primary: #F2F4F6;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F7F8FA;
+  --text-primary: #191F28;
+  --text-secondary: #4E5968;
+  --text-muted: #8B95A1;
+  --border-color: #E5E8EB;
+  --primary: #0064FF;
+  --primary-hover: #0050D0;
+  --primary-light: #EBF3FF;
+  --secondary: #3182F6;
+  --secondary-hover: #1B64DA;
+  --accent: #FE6B00;
+  --accent-hover: #E55F00;
+  --success: #00C853;
+  --danger: #F04452;
+  --gradient-primary: linear-gradient(135deg, #0064FF, #3182F6);
+  --gradient-accent: linear-gradient(135deg, #FE6B00, #FF9E44);
+  --gradient-cool: linear-gradient(135deg, #0064FF, #00C4B4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(0, 100, 255, 0.15);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --font-sans: var(--font-noto-sans), var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+.dark {
+  --bg-primary: #191F28;
+  --bg-surface: #26282D;
+  --bg-surface-hover: #333740;
+  --text-primary: #F2F4F6;
+  --text-secondary: #8B95A1;
+  --text-muted: #6B7684;
+  --border-color: #35383E;
+  --primary: #3182F6;
+  --primary-hover: #0064FF;
+  --primary-light: rgba(49, 130, 246, 0.12);
+  --secondary: #4E96F7;
+  --secondary-hover: #3182F6;
+  --accent: #FF9E44;
+  --accent-hover: #FE6B00;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 24px rgba(49, 130, 246, 0.2);
+}
+
+/* ---- Tailwind v4 Theme Extensions ---- */
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--bg-surface);
+  --color-surface-hover: var(--bg-surface-hover);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border-color);
+  --font-sans: var(--font-noto-sans), var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* ---- Base Styles ---- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Toss-Style Card (clean solid surface) ---- */
+.glass {
+  background: var(--bg-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .glass {
+  background: var(--bg-surface);
+  border: none;
+}
+
+.glass-card {
+  background: var(--bg-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark .glass-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+/* ---- Gradient Text (Toss Blue) ---- */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ---- Gradient Backgrounds ---- */
+.gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-accent {
+  background: var(--gradient-accent);
+}
+
+.gradient-cool {
+  background: var(--gradient-cool);
+}
+
+/* ---- Custom Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ---- Animations ---- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes barGrow {
+  from { width: 0%; }
+}
+
+@keyframes bounce-sm {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalBgIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes textRotate {
+  0%, 20% { opacity: 1; transform: translateY(0); }
+  25%, 95% { opacity: 0; transform: translateY(-16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Animation Utilities ---- */
+.animate-fade-in { animation: fadeIn 0.35s ease-out; }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+.animate-fade-in-down { animation: fadeInDown 0.4s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.35s ease-out; }
+.animate-scale-in { animation: scaleIn 0.25s ease-out; }
+.animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.animate-bounce-sm { animation: bounce-sm 0.4s ease; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-modal-in { animation: modalIn 0.25s ease-out; }
+.animate-modal-bg-in { animation: modalBgIn 0.2s ease-out; }
+.animate-spin-slow { animation: spin 1s linear infinite; }
+
+/* ---- Vote Result Bar (Toss Blue) ---- */
+.vote-bar-fill {
+  transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.vote-bar-fill.winner {
+  background: var(--gradient-primary);
+}
+
+/* ---- Interactive States (Toss: subtle, clean) ---- */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.01);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: var(--shadow-glow);
+}
+
+/* ---- Button Base (Toss Style: solid rounded) ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 12px rgba(0, 100, 255, 0.25);
+}
+
+.btn-secondary {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-accent:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 2px 12px rgba(254, 107, 0, 0.25);
+}
+
+/* ---- Staggered Animation ---- */
+.stagger-1 { animation-delay: 0.04s; }
+.stagger-2 { animation-delay: 0.08s; }
+.stagger-3 { animation-delay: 0.12s; }
+.stagger-4 { animation-delay: 0.16s; }
+.stagger-5 { animation-delay: 0.20s; }
+.stagger-6 { animation-delay: 0.24s; }
+.stagger-7 { animation-delay: 0.28s; }
+.stagger-8 { animation-delay: 0.32s; }
+
+/* ---- Tab / Filter Pill (Toss Style: filled active) ---- */
+.pill {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: var(--bg-surface-hover);
+  color: var(--text-secondary);
+}
+
+.pill:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.pill.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* ---- Badge (Toss Style) ---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-live {
+  background: rgba(0, 200, 83, 0.1);
+  color: var(--success);
+}
+
+.badge-closed {
+  background: rgba(240, 68, 82, 0.1);
+  color: var(--danger);
+}
