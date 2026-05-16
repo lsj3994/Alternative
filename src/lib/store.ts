@@ -156,3 +156,20 @@ export function logout(): void {
     localStorage.removeItem(KEYS.NICKNAME);
   } catch { /* ignore */ }
 }
+
+// ---- User Created Polls ----
+export function saveUserPoll(poll: Poll): void {
+  const polls = getUserPolls();
+  polls.push(poll);
+  setItem(KEYS.USER_POLLS, JSON.stringify(polls));
+}
+
+export function getUserPolls(): Poll[] {
+  const raw = getItem(KEYS.USER_POLLS);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as Poll[];
+  } catch {
+    return [];
+  }
+}

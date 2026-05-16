@@ -1,18 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Flame, Clock, BarChart3, Sparkles } from 'lucide-react';
 import PollCard from '@/components/poll/PollCard';
 import RotatingText from '@/components/ui/RotatingText';
 import { DUMMY_POLLS, CATEGORIES } from '@/lib/data';
+import { getUserPolls } from '@/lib/store';
+import { Poll } from '@/lib/types';
 
 type SortMode = 'popular' | 'latest' | 'active';
 
 export default function HomePage() {
   const [category, setCategory] = useState('전체');
   const [sortMode, setSortMode] = useState<SortMode>('popular');
+  const [allPolls, setAllPolls] = useState<Poll[]>(DUMMY_POLLS);
 
-  const filtered = DUMMY_POLLS.filter(
+  useEffect(() => {
+    // 클라이언트 사이드에서 유저 투표 불러와서 합치기
+    const userPolls = getUserPolls();
+    setAllPolls([...userPolls, ...DUMMY_POLLS]);
+  }, []);
+
+  const filtered = allPolls.filter(
     (p) => category === '전체' || p.category === category
   );
 

@@ -214,9 +214,12 @@ export const REGIONS = [
   '전북', '전남', '경북', '경남', '제주',
 ];
 
+import { getUserPolls } from './store';
+
 // ---- Poll ID로 검색 ----
 export function getPollById(id: string): Poll | undefined {
-  return DUMMY_POLLS.find((p) => p.id === id);
+  const userPolls = getUserPolls();
+  return userPolls.find((p) => p.id === id) || DUMMY_POLLS.find((p) => p.id === id);
 }
 
 // ---- Poll 통계 ----

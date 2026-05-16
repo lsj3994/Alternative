@@ -117,8 +117,34 @@ export default function CreatePollPage() {
       alert('제목과 최소 2개의 선택지를 입력해주세요.');
       return;
     }
-    alert('🎉 투표가 개설되었습니다! (현재는 데모 모드)');
-    router.push('/');
+    
+    // 유효한 선택지만 필터링
+    const validOptions = options.filter((o) => o.label.trim());
+    
+    // 투표 객체 생성
+    const newPoll = {
+      id: `poll-${Date.now()}`,
+      title: title.trim(),
+      description: description.trim(),
+      status: 'active' as const,
+      thumbnailUrl: validOptions.find(o => o.imageUrl)?.imageUrl || undefined,
+      category: category || '기타',
+      totalVotes: 0,
+      createdAt: new Date().toISOString(),
+      options: validOptions.map(opt => ({
+        id: opt.id,
+        pollId: `poll-${Date.now()}`,
+        label: opt.label.trim(),
+        imageUrl: opt.imageUrl,
+        voteCount: 0
+      }))
+    };
+
+    import('@/lib/store').then(({ saveUserPoll }) => {
+      saveUserPoll(newPoll);
+      alert('🎉 투표가 개설되었습니다!');
+      router.push('/');
+    });
   };
 
   const isValid = title.trim() && options.filter((o) => o.label.trim()).length >= 2;
