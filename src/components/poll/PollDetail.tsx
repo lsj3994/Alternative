@@ -3,72 +3,98 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Poll, PollOption } from '@/lib/types';
-import { hasVoted, saveVote, getDemographics, isLoggedIn, getUser } from '@/lib/store';
+import {
+  getVotedOptions,
+  saveVote,
+  getDemographics,
+  isLoggedIn,
+  getUser,
+  canVoteMore,
+  getMaxVotes,
+  cancelVote,
+} from '@/lib/store';
 import VoteResultBar from './VoteResultBar';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Vote } from 'lucide-react';
 
 interface PollDetailProps {
   poll: Poll;
-  onVote: (optionId: string) => void;
+  onVote: (optionIds: string[]) => void;
   onNeedSignup: () => void;
 }
 
 export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailProps) {
-  const [votedOptionId, setVotedOptionId] = useState<string | null>(null);
+  const [votedOptionIds, setVotedOptionIds] = useState<string[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [justVotedIds, setJustVotedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const voted = hasVoted(poll.id);
-    if (voted) {
-      setVotedOptionId(voted);
+    const voted = getVotedOptions(poll.id);
+    if (voted.length > 0) {
+      setVotedOptionIds(voted);
       setShowResults(true);
     }
   }, [poll.id]);
 
-  const handleVote = (option: PollOption) => {
-    if (votedOptionId) return;
-
-    // 회원가입 체크
-    if (!isLoggedIn()) {
-      onNeedSignup();
-      return;
+  const handleCancelVote = () => {
+    if (confirm('투표를 취소하고 다시 선택하시겠습니까?')) {
+      cancelVote(poll.id);
+      setVotedOptionIds([]);
+      setJustVotedIds([]);
+      setShowResults(false);
+      onVote([]); // 부모 컴포넌트에 투표 상태 초기화 전달
     }
-
-    const demographics = getDemographics();
-    const user = getUser();
-
-    setIsAnimating(true);
-    setVotedOptionId(option.id);
-
-    // 투표 저장
-    saveVote({
-      id: `vote-${Date.now()}`,
-      pollId: poll.id,
-      optionId: option.id,
-      userId: user?.id || 'local-user',
-      gender: demographics?.gender,
-      ageGroup: demographics?.ageGroup,
-      region: demographics?.region,
-      createdAt: new Date().toISOString(),
-    });
-
-    onVote(option.id);
-
-    // 결과 표시 애니메이션
-    setTimeout(() => {
-      setShowResults(true);
-      setIsAnimating(false);
-    }, 300);
   };
+
+  const handleVote = (option: PollOption) => {
+    setVotedOptionIds((prev) => {
+      if (prev.length >= getMaxVotes()) return prev;
+
+      const newVotedIds = [...prev, option.id];
+
+      // 즉시 투표 저장
+      const demographics = getDemographics();
+      const user = getUser();
+      const userId = user?.id || 'local-user';
+      const newVoteId = `vote-${Date.now()}-${option.id}-${prev.length}`;
+
+      saveVote({
+        id: newVoteId,
+        pollId: poll.id,
+        optionId: option.id,
+        userId,
+        gender: demographics?.gender,
+        ageGroup: demographics?.ageGroup,
+        region: demographics?.region,
+        createdAt: new Date().toISOString(),
+      });
+
+      setJustVotedIds((jPrev) => [...jPrev, option.id]); // 낙관적 업데이트용
+      onVote(newVotedIds);
+
+      // 투표를 모두 소진하면 결과 표시
+      if (newVotedIds.length >= getMaxVotes()) {
+        setIsAnimating(true);
+        setTimeout(() => {
+          setShowResults(true);
+          setIsAnimating(false);
+        }, 300);
+      }
+
+      return newVotedIds;
+    });
+  };
+
+  const userVoteCount = justVotedIds.length;
 
   const updatedOptions = poll.options.map((opt) => ({
     ...opt,
-    voteCount: opt.id === votedOptionId ? opt.voteCount + 1 : opt.voteCount,
+    voteCount: opt.voteCount + justVotedIds.filter((id) => id === opt.id).length,
   }));
 
-  const totalVotes = votedOptionId ? poll.totalVotes + 1 : poll.totalVotes;
+  const totalVotes = poll.totalVotes + userVoteCount;
   const maxVotes = Math.max(...updatedOptions.map((o) => o.voteCount));
+  const remainingVotes = getMaxVotes() - votedOptionIds.length;
 
   return (
     <div className="animate-fade-in">
@@ -91,12 +117,33 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
         </div>
       </div>
 
+      {/* 투표 안내 - 아직 투표 전일 때만 표시 */}
+      {!showResults && (
+        <div className="mb-4 p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Vote size={16} className="text-primary" />
+              <span className="text-sm font-semibold text-text-primary">
+                최대 {getMaxVotes()}개까지 선택 가능
+              </span>
+            </div>
+            <span className={`text-sm font-bold ${remainingVotes === 0 ? 'text-danger' : 'text-primary'}`}>
+              {votedOptionIds.length > 0
+                ? `${votedOptionIds.length}개 선택됨 · 남은 표: ${remainingVotes}`
+                : `${getMaxVotes()}표 사용 가능`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* 선택지 목록 */}
       <div className="space-y-4">
         {updatedOptions.map((option) => {
           const percent = totalVotes > 0 ? (option.voteCount / totalVotes) * 100 : 0;
           const isWinner = option.voteCount === maxVotes && showResults;
-          const isSelected = votedOptionId === option.id;
+          const myVotesForOption = votedOptionIds.filter((id) => id === option.id).length;
+          const isSelected = myVotesForOption > 0;
+          const isDisabled = !isSelected && remainingVotes === 0;
 
           return (
             <div key={option.id} className="animate-fade-in-up">
@@ -104,11 +151,11 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
                 /* ---- 투표 전: 선택 버튼 ---- */
                 <button
                   onClick={() => handleVote(option)}
-                  disabled={!!votedOptionId}
-                  className={`w-full group glass-card rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 hover:border-primary hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] ${
-                    isAnimating && isSelected
-                      ? 'border-primary scale-[0.98] opacity-80'
-                      : ''
+                  disabled={isDisabled}
+                  className={`w-full group glass-card rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 ${
+                    isDisabled
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:border-primary hover:shadow-lg hover:scale-[1.01] active:scale-[0.99]'
                   }`}
                   id={`vote-btn-${option.id}`}
                 >
@@ -129,13 +176,25 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
                         {option.emoji}
                       </span>
                     )}
-                    <span className="text-lg font-bold text-text-primary group-hover:text-primary transition-colors">
+                    <span className={`text-lg font-bold transition-colors ${
+                      isSelected ? 'text-primary' : 'text-text-primary group-hover:text-primary'
+                    }`}>
                       {option.label}
                     </span>
                   </div>
-                  <span className="text-text-muted text-sm group-hover:text-primary transition-colors">
-                    투표하기 →
-                  </span>
+                  {/* 클릭시 바로 투표 적용 안내 */}
+                  {isSelected ? (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <CheckCircle2 size={20} className="text-primary animate-scale-in" />
+                      <span className="text-primary font-bold text-sm bg-primary/10 px-2.5 py-0.5 rounded-full">
+                        ({myVotesForOption}/{getMaxVotes()})
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-text-muted text-sm group-hover:text-primary transition-colors shrink-0">
+                      투표하기 →
+                    </span>
+                  )}
                 </button>
               ) : (
                 /* ---- 투표 후: 결과 표시 ---- */
@@ -174,6 +233,33 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
           );
         })}
       </div>
+
+      {/* 투표 중간 결과 보기 버튼 (남은 표가 있을 때) */}
+      {!showResults && votedOptionIds.length > 0 && votedOptionIds.length < getMaxVotes() && (
+        <div className="mt-6 animate-fade-in-up flex flex-col items-center">
+          <p className="text-center text-sm font-medium mb-3 text-primary/90">
+            투표를 일찍 종료하고 결과를 볼 수 있습니다
+          </p>
+          <button
+            onClick={() => setShowResults(true)}
+            className="w-full max-w-xs btn bg-surface-hover text-text-primary border border-border text-base py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-surface-active"
+          >
+            결과 보기 (투표 종료)
+          </button>
+        </div>
+      )}
+
+      {/* 결과 화면 - 투표 취소 버튼 (핑크색) */}
+      {showResults && (
+        <div className="mt-8 flex justify-center animate-fade-in">
+          <button
+            onClick={handleCancelVote}
+            className="w-full max-w-xs btn bg-pink-500 hover:bg-pink-600 text-white text-base py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
+          >
+            투표 다시 하기 (취소)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

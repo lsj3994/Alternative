@@ -5,6 +5,7 @@ import { Comment, PollOption } from '@/lib/types';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
 import { MessageSquare, TrendingUp, Clock, Crown } from 'lucide-react';
+import { likeCommentSync, dislikeCommentSync } from '@/lib/store';
 
 interface CommentSectionProps {
   pollId: string;
@@ -24,6 +25,7 @@ export default function CommentSection({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [sortMode, setSortMode] = useState<SortMode>('best');
   const [filterOptionId, setFilterOptionId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const handleAddComment = (comment: Comment) => {
     setComments((prev) => [comment, ...prev]);
@@ -33,6 +35,7 @@ export default function CommentSection({
     setComments((prev) =>
       prev.map((c) => (c.id === commentId ? { ...c, likes: c.likes + 1 } : c))
     );
+    likeCommentSync(commentId);
   };
 
   const handleDislike = (commentId: string) => {
@@ -41,6 +44,7 @@ export default function CommentSection({
         c.id === commentId ? { ...c, dislikes: c.dislikes + 1 } : c
       )
     );
+    dislikeCommentSync(commentId);
   };
 
   // 필터링
@@ -124,7 +128,7 @@ export default function CommentSection({
 
       {/* Comments List */}
       <div className="space-y-3">
-        {filtered.map((comment, i) => (
+        {filtered.slice(0, visibleCount).map((comment, i) => (
           <CommentItem
             key={comment.id}
             comment={comment}
@@ -134,6 +138,15 @@ export default function CommentSection({
           />
         ))}
       </div>
+
+      {filtered.length > visibleCount && (
+        <button
+          onClick={() => setVisibleCount((prev) => prev + 20)}
+          className="btn w-full mt-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium"
+        >
+          더보기 ({filtered.length - visibleCount}개 남음)
+        </button>
+      )}
 
       {filtered.length === 0 && (
         <div className="text-center py-12 text-text-muted">

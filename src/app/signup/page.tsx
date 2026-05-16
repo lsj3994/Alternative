@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserPlus, MapPin, Calendar, User as UserIcon } from 'lucide-react';
-import { saveUser } from '@/lib/store';
+import { UserPlus, MapPin, Calendar, User as UserIcon, Loader2 } from 'lucide-react';
+import { saveUserAsync, saveUser } from '@/lib/store';
+import { canUseSupabase } from '@/lib/supabase-db';
 import { REGIONS } from '@/lib/data';
 
 export default function SignupPage() {
@@ -13,9 +14,11 @@ export default function SignupPage() {
   const [birthYear, setBirthYear] = useState('');
   const [region, setRegion] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 80 }, (_, i) => currentYear - 10 - i); // 10살~90살
+  // 1940년대부터 2010년대까지
+  const decadeOptions = [2010, 2000, 1990, 1980, 1970, 1960, 1950, 1940];
 
   const genderOptions = [
     { value: 'male', label: '남성', emoji: '👨' },
@@ -35,19 +38,34 @@ export default function SignupPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    saveUser({
+    setIsSubmitting(true);
+
+    const user = {
       id: `user-${Date.now()}`,
       nickname: nickname.trim(),
       gender: gender as 'male' | 'female' | 'other',
       birthYear: parseInt(birthYear),
       region,
       createdAt: new Date().toISOString(),
-    });
+    };
 
+    // Supabase 연결 가능하면 비동기로, 아니면 동기로
+    if (canUseSupabase()) {
+      const result = await saveUserAsync(user);
+      if (!result.success) {
+        setErrors({ nickname: result.error || '가입에 실패했습니다.' });
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      saveUser(user);
+    }
+
+    setIsSubmitting(false);
     router.push('/');
   };
 
@@ -123,7 +141,7 @@ export default function SignupPage() {
           <div>
             <label className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
               <Calendar size={15} />
-              태어난 해
+              태어난 년대
             </label>
             <select
               value={birthYear}
@@ -137,10 +155,10 @@ export default function SignupPage() {
               }`}
               id="signup-birthyear"
             >
-              <option value="">태어난 해를 선택하세요</option>
-              {yearOptions.map((y) => (
+              <option value="">태어난 년대를 선택하세요</option>
+              {decadeOptions.map((y) => (
                 <option key={y} value={y}>
-                  {y}년생 ({currentYear - y}세)
+                  {y}년대
                 </option>
               ))}
             </select>
@@ -182,10 +200,18 @@ export default function SignupPage() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full btn btn-primary text-base py-4 rounded-2xl mt-2"
+            disabled={isSubmitting}
+            className="w-full btn btn-primary text-base py-4 rounded-2xl mt-2 disabled:opacity-60 flex items-center justify-center gap-2"
             id="signup-submit"
           >
-            가입 완료 🎉
+            {isSubmitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                가입 중...
+              </>
+            ) : (
+              '가입 완료 🎉'
+            )}
           </button>
         </form>
 

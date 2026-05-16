@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Trash2, Sparkles, Upload, Eye, ImageIcon } from 'lucide-react';
 import { generateAIImage } from '@/lib/ai-image';
 import { CATEGORIES } from '@/lib/data';
+import { getUser, isLoggedIn } from '@/lib/store';
 import Spinner from '@/components/ui/Spinner';
 
 interface OptionInput {
@@ -16,6 +17,14 @@ interface OptionInput {
 
 export default function CreatePollPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      alert('회원만 투표를 개설할 수 있습니다. 먼저 가입해 주세요!');
+      router.push('/signup');
+    }
+  }, [router]);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -55,7 +64,7 @@ export default function CreatePollPage() {
       const prompt = title.trim()
         ? `${title} 투표에서 "${label}" 항목을 대표하는 이미지`
         : `"${label}"을(를) 표현하는 이미지`;
-      const url = await generateAIImage(prompt);
+      const url = await generateAIImage(prompt, label.trim());
       updateOption(optionId, 'imageUrl', url);
     } catch {
       alert('이미지 생성에 실패했습니다.');
@@ -78,7 +87,7 @@ export default function CreatePollPage() {
           const prompt = title.trim()
             ? `${title} 투표에서 "${opt.label}" 항목을 대표하는 이미지`
             : `"${opt.label}"을(를) 표현하는 이미지`;
-          const url = await generateAIImage(prompt);
+          const url = await generateAIImage(prompt, opt.label.trim());
           return { id: opt.id, url };
         })
       );
@@ -111,19 +120,25 @@ export default function CreatePollPage() {
   };
 
   // 제출
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || options.filter((o) => o.label.trim()).length < 2) {
       alert('제목과 최소 2개의 선택지를 입력해주세요.');
       return;
     }
+
+    setIsSubmitting(true);
     
     // 유효한 선택지만 필터링
     const validOptions = options.filter((o) => o.label.trim());
+    const user = getUser();
+    const pollId = `poll-${Date.now()}`;
     
     // 투표 객체 생성
     const newPoll = {
-      id: `poll-${Date.now()}`,
+      id: pollId,
       title: title.trim(),
       description: description.trim(),
       status: 'active' as const,
@@ -131,20 +146,27 @@ export default function CreatePollPage() {
       category: category || '기타',
       totalVotes: 0,
       createdAt: new Date().toISOString(),
+      createdBy: user?.id,
       options: validOptions.map(opt => ({
         id: opt.id,
-        pollId: `poll-${Date.now()}`,
+        pollId: pollId,
         label: opt.label.trim(),
         imageUrl: opt.imageUrl,
         voteCount: 0
       }))
     };
 
-    import('@/lib/store').then(({ saveUserPoll }) => {
-      saveUserPoll(newPoll);
+    try {
+      const { saveUserPollAsync } = await import('@/lib/store');
+      await saveUserPollAsync(newPoll);
       alert('🎉 투표가 개설되었습니다!');
       router.push('/');
-    });
+    } catch (err) {
+      console.error('투표 개설 실패:', err);
+      alert('투표 개설에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isValid = title.trim() && options.filter((o) => o.label.trim()).length >= 2;

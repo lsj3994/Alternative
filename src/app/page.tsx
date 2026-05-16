@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { Flame, Clock, BarChart3, Sparkles } from 'lucide-react';
 import PollCard from '@/components/poll/PollCard';
 import RotatingText from '@/components/ui/RotatingText';
-import { DUMMY_POLLS, CATEGORIES } from '@/lib/data';
-import { getUserPolls } from '@/lib/store';
+import { DUMMY_POLLS, CATEGORIES, fetchAllPolls } from '@/lib/data';
 import { Poll } from '@/lib/types';
 
 type SortMode = 'popular' | 'latest' | 'active';
@@ -14,11 +13,27 @@ export default function HomePage() {
   const [category, setCategory] = useState('전체');
   const [sortMode, setSortMode] = useState<SortMode>('popular');
   const [allPolls, setAllPolls] = useState<Poll[]>(DUMMY_POLLS);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 클라이언트 사이드에서 유저 투표 불러와서 합치기
-    const userPolls = getUserPolls();
-    setAllPolls([...userPolls, ...DUMMY_POLLS]);
+    let cancelled = false;
+
+    async function loadPolls() {
+      setIsLoading(true);
+      try {
+        const polls = await fetchAllPolls();
+        if (!cancelled) {
+          setAllPolls(polls);
+        }
+      } catch (err) {
+        console.warn('투표 목록 로드 실패:', err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadPolls();
+    return () => { cancelled = true; };
   }, []);
 
   const filtered = allPolls.filter(
@@ -105,13 +120,20 @@ export default function HomePage() {
       </section>
 
       {/* Poll Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {sorted.map((poll, i) => (
-          <PollCard key={poll.id} poll={poll} index={i} />
-        ))}
-      </section>
+      {isLoading ? (
+        <div className="text-center py-20 text-text-muted animate-pulse">
+          <p className="text-4xl mb-4">🔄</p>
+          <p className="text-lg">투표 목록을 불러오는 중...</p>
+        </div>
+      ) : (
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {sorted.map((poll, i) => (
+            <PollCard key={poll.id} poll={poll} index={i} />
+          ))}
+        </section>
+      )}
 
-      {sorted.length === 0 && (
+      {!isLoading && sorted.length === 0 && (
         <div className="text-center py-20 text-text-muted">
           <p className="text-4xl mb-4">🤷</p>
           <p className="text-lg">해당 카테고리에 투표가 없습니다.</p>

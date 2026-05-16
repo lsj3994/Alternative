@@ -215,19 +215,101 @@ export const REGIONS = [
 ];
 
 import { getUserPolls } from './store';
+import { canUseSupabase, dbFetchPolls, dbFetchPollById, dbFetchComments, dbGetPollStats, dbUpdatePoll, dbDeletePoll } from './supabase-db';
 
-// ---- Poll ID로 검색 ----
+// ---- Poll ID로 검색 (동기 — 로컬/더미 폴백) ----
 export function getPollById(id: string): Poll | undefined {
   const userPolls = getUserPolls();
   return userPolls.find((p) => p.id === id) || DUMMY_POLLS.find((p) => p.id === id);
 }
 
-// ---- Poll 통계 ----
+// ---- Poll 통계 (동기 — 더미 폴백) ----
 export function getPollStats(pollId: string): PollStats | undefined {
   return DUMMY_STATS[pollId];
 }
 
-// ---- Poll 댓글 ----
+// ---- Poll 댓글 (동기 — 더미 폴백) ----
 export function getPollComments(pollId: string): Comment[] {
   return DUMMY_COMMENTS[pollId] || [];
+}
+
+// ============================================================
+// Supabase 비동기 함수 (DB 우선, 실패 시 더미 폴백)
+// ============================================================
+
+/** 전체 투표 목록 조회 (DB → 더미 폴백) */
+export async function fetchAllPolls(): Promise<Poll[]> {
+  if (canUseSupabase()) {
+    try {
+      const dbPolls = await dbFetchPolls();
+      if (dbPolls.length > 0) {
+        return dbPolls;
+      }
+    } catch (err) {
+      console.warn('[Supabase] Polls 조회 실패, 더미 데이터 사용:', err);
+    }
+  }
+
+  // 폴백: 로컬 유저 투표 + 더미 데이터
+  const userPolls = getUserPolls();
+  return [...userPolls, ...DUMMY_POLLS];
+}
+
+/** 단일 투표 조회 (DB → 더미 폴백) */
+export async function fetchPollById(id: string): Promise<Poll | undefined> {
+  if (canUseSupabase()) {
+    try {
+      const dbPoll = await dbFetchPollById(id);
+      if (dbPoll) return dbPoll;
+    } catch (err) {
+      console.warn('[Supabase] Poll 조회 실패, 로컬 데이터 사용:', err);
+    }
+  }
+  return getPollById(id);
+}
+
+/** 댓글 조회 (DB → 더미 폴백) */
+export async function fetchPollComments(pollId: string): Promise<Comment[]> {
+  if (canUseSupabase()) {
+    try {
+      const dbComments = await dbFetchComments(pollId);
+      if (dbComments.length > 0) return dbComments;
+    } catch (err) {
+      console.warn('[Supabase] Comments 조회 실패, 더미 데이터 사용:', err);
+    }
+  }
+  return getPollComments(pollId);
+}
+
+/** 통계 조회 (DB → 더미 폴백) */
+export async function fetchPollStats(pollId: string): Promise<PollStats | undefined> {
+  if (canUseSupabase()) {
+    try {
+      const dbStats = await dbGetPollStats(pollId);
+      if (dbStats) return dbStats;
+    } catch (err) {
+      console.warn('[Supabase] Stats 조회 실패, 더미 데이터 사용:', err);
+    }
+  }
+  return getPollStats(pollId);
+}
+
+/** 투표 수정 (DB 우선, 실패 시 에러 반환) */
+export async function updatePoll(
+  pollId: string,
+  pollData: Partial<Omit<Poll, 'id' | 'totalVotes' | 'createdAt' | 'createdBy'>>,
+  optionsData: { id: string; label: string; imageUrl?: string; emoji?: string }[]
+): Promise<{ success: boolean; error?: string }> {
+  if (canUseSupabase()) {
+    return dbUpdatePoll(pollId, pollData, optionsData);
+  }
+  return { success: false, error: '데이터베이스에 연결할 수 없습니다.' };
+}
+
+/** 투표 삭제 (DB 우선, 실패 시 에러 반환) */
+export async function deletePoll(pollId: string): Promise<{ success: boolean; error?: string }> {
+  if (canUseSupabase()) {
+    return dbDeletePoll(pollId);
+  }
+  return { success: false, error: '데이터베이스에 연결할 수 없습니다.' };
 }

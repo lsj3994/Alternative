@@ -112,14 +112,34 @@ const KEYWORD_MAP: Record<string, KeywordMapping> = {
 };
 
 /**
- * 프롬프트에서 가장 적합한 키워드 매핑을 찾습니다.
+ * 텍스트에서 가장 적합한 키워드 매핑을 찾습니다.
+ * 우선순위: 완전 일치 → 시작/끝 일치 → 가장 긴 키워드 부분 일치
  */
-function findBestMapping(prompt: string): KeywordMapping | null {
-  for (const [korean, mapping] of Object.entries(KEYWORD_MAP)) {
-    if (prompt.includes(korean)) {
+function findBestMapping(text: string): KeywordMapping | null {
+  const trimmed = text.trim();
+  const entries = Object.entries(KEYWORD_MAP);
+
+  // 1순위: 완전 일치
+  for (const [korean, mapping] of entries) {
+    if (trimmed === korean) return mapping;
+  }
+
+  // 2순위: 시작 또는 끝 일치 (예: '민초파' → '민초' 매칭)
+  // 더 긴 키워드를 우선 매칭 (예: '민트초코' > '민초')
+  const sortedByLength = [...entries].sort((a, b) => b[0].length - a[0].length);
+  for (const [korean, mapping] of sortedByLength) {
+    if (trimmed.startsWith(korean) || trimmed.endsWith(korean)) {
       return mapping;
     }
   }
+
+  // 3순위: 가장 긴 키워드 부분 일치
+  for (const [korean, mapping] of sortedByLength) {
+    if (trimmed.includes(korean)) {
+      return mapping;
+    }
+  }
+
   return null;
 }
 

@@ -38,7 +38,7 @@ export default function PollCard({ poll, index = 0 }: PollCardProps) {
 
   return (
     <Link
-      href={`/poll/${poll.id}`}
+      href={`/poll?id=${poll.id}`}
       className={`group block glass-card rounded-2xl overflow-hidden hover-lift hover-glow animate-fade-in-up`}
       style={{ animationDelay: `${index * 0.07}s`, animationFillMode: 'both' }}
       id={`poll-card-${poll.id}`}
