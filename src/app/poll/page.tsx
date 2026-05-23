@@ -3,9 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, BarChart3, Share2 } from 'lucide-react';
-import { getPollById, getPollComments, getPollStats, fetchPollById, fetchPollComments, fetchPollStats } from '@/lib/data';
-import { getVotedOptions } from '@/lib/store';
+import { ArrowLeft, BarChart3, Share2, Trash2, Edit3 } from 'lucide-react';
+import { getPollById, getPollComments, getPollStats, fetchPollById, fetchPollComments, fetchPollStats, deletePoll } from '@/lib/data';
+import { getVotedOptions, getUser, isLoggedIn, getDemographics } from '@/lib/store';
 import PollDetail from '@/components/poll/PollDetail';
 import CommentSection from '@/components/comment/CommentSection';
 import GenderPieChart from '@/components/stats/GenderPieChart';
@@ -109,21 +109,95 @@ function PollContent() {
     );
   }
 
-  const handleVote = (optionIds: string[]) => {
+  const handleVote = (optionIds: string[], newlyVotedOptionId?: string) => {
     setVotedOptionIds(optionIds);
+
+    if (newlyVotedOptionId && stats) {
+      const demographics = getDemographics();
+      const isGuest = !isLoggedIn();
+
+      const gender = isGuest ? '미가입자' : demographics?.gender || 'other';
+      const ageGroup = isGuest ? '미가입자' : demographics?.ageGroup || 'unknown';
+      const region = isGuest ? '미가입자' : demographics?.region || 'unknown';
+
+      const newStats = JSON.parse(JSON.stringify(stats)) as PollStatsType;
+
+      // Update gender
+      const gEntry = newStats.gender.find((g) => g.gender === gender);
+      if (gEntry) {
+        gEntry.counts[newlyVotedOptionId] = (gEntry.counts[newlyVotedOptionId] || 0) + 1;
+      } else {
+        const label = gender === 'male' ? '남성' : gender === 'female' ? '여성' : gender;
+        newStats.gender.push({ gender, label, counts: { [newlyVotedOptionId]: 1 } });
+      }
+
+      // Update age
+      const aEntry = newStats.age.find((a) => a.ageGroup === ageGroup);
+      if (aEntry) {
+        aEntry.counts[newlyVotedOptionId] = (aEntry.counts[newlyVotedOptionId] || 0) + 1;
+      } else {
+        newStats.age.push({ ageGroup, label: ageGroup, counts: { [newlyVotedOptionId]: 1 } });
+      }
+
+      // Update region
+      const rEntry = newStats.region.find((r) => r.region === region);
+      if (rEntry) {
+        rEntry.counts[newlyVotedOptionId] = (rEntry.counts[newlyVotedOptionId] || 0) + 1;
+      } else {
+        newStats.region.push({ region, counts: { [newlyVotedOptionId]: 1 } });
+      }
+
+      setStats(newStats);
+    }
+  };
+
+  const currentUser = getUser();
+  const isCreator = currentUser && poll.createdBy && currentUser.id === poll.createdBy;
+
+  const handleDelete = async () => {
+    if (confirm('정말 이 투표를 삭제하시겠습니까? 연관된 모든 데이터가 삭제됩니다.')) {
+      const res = await deletePoll(poll.id);
+      if (res.success) {
+        alert('투표가 삭제되었습니다.');
+        router.push('/');
+      } else {
+        alert(`삭제 실패: ${res.error}`);
+      }
+    }
   };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
-      {/* Back Button */}
-      <button
-        onClick={() => router.push('/')}
-        className="flex items-center gap-1 text-sm text-text-muted hover:text-text-primary transition-colors mb-6"
-        id="back-button"
-      >
-        <ArrowLeft size={16} />
-        목록으로
-      </button>
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center gap-1 text-sm text-text-muted hover:text-text-primary transition-colors"
+          id="back-button"
+        >
+          <ArrowLeft size={16} />
+          목록으로
+        </button>
+
+        {isCreator && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/edit?id=${poll.id}`)}
+              className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl bg-surface-hover text-text-secondary hover:text-primary transition-colors border border-border"
+            >
+              <Edit3 size={14} />
+              수정
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl bg-surface-hover text-text-secondary hover:text-danger transition-colors border border-border"
+            >
+              <Trash2 size={14} />
+              삭제
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Thumbnail */}
       {poll.thumbnailUrl && (

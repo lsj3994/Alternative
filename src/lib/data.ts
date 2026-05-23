@@ -301,7 +301,28 @@ export async function updatePoll(
   optionsData: { id: string; label: string; imageUrl?: string; emoji?: string }[]
 ): Promise<{ success: boolean; error?: string }> {
   if (canUseSupabase()) {
-    return dbUpdatePoll(pollId, pollData, optionsData);
+    const res = await dbUpdatePoll(pollId, pollData, optionsData);
+    if (res.success) {
+      if (typeof window !== 'undefined') {
+        const userPolls = getUserPolls();
+        const updated = userPolls.map((p) =>
+          p.id === pollId
+            ? {
+                ...p,
+                ...pollData,
+                options: optionsData.map((o) => ({
+                  id: o.id,
+                  label: o.label,
+                  imageUrl: o.imageUrl,
+                  voteCount: p.options.find((old) => old.id === o.id)?.voteCount || 0,
+                })),
+              }
+            : p
+        );
+        localStorage.setItem('bangtoron_user_polls', JSON.stringify(updated));
+      }
+    }
+    return res;
   }
   return { success: false, error: '데이터베이스에 연결할 수 없습니다.' };
 }
@@ -309,7 +330,15 @@ export async function updatePoll(
 /** 투표 삭제 (DB 우선, 실패 시 에러 반환) */
 export async function deletePoll(pollId: string): Promise<{ success: boolean; error?: string }> {
   if (canUseSupabase()) {
-    return dbDeletePoll(pollId);
+    const res = await dbDeletePoll(pollId);
+    if (res.success) {
+      if (typeof window !== 'undefined') {
+        const userPolls = getUserPolls();
+        const updated = userPolls.filter((p) => p.id !== pollId);
+        localStorage.setItem('bangtoron_user_polls', JSON.stringify(updated));
+      }
+    }
+    return res;
   }
   return { success: false, error: '데이터베이스에 연결할 수 없습니다.' };
 }

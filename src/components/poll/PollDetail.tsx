@@ -47,42 +47,39 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
   };
 
   const handleVote = (option: PollOption) => {
-    setVotedOptionIds((prev) => {
-      if (prev.length >= getMaxVotes()) return prev;
+    if (votedOptionIds.length >= getMaxVotes()) return;
 
-      const newVotedIds = [...prev, option.id];
+    const newVotedIds = [...votedOptionIds, option.id];
+    setVotedOptionIds(newVotedIds);
 
-      // 즉시 투표 저장
-      const demographics = getDemographics();
-      const user = getUser();
-      const userId = user?.id || 'local-user';
-      const newVoteId = `vote-${Date.now()}-${option.id}-${prev.length}`;
+    // 즉시 투표 저장
+    const demographics = getDemographics();
+    const user = getUser();
+    const userId = user?.id || 'local-user';
+    const newVoteId = `vote-${Date.now()}-${option.id}-${votedOptionIds.length}`;
 
-      saveVote({
-        id: newVoteId,
-        pollId: poll.id,
-        optionId: option.id,
-        userId,
-        gender: demographics?.gender,
-        ageGroup: demographics?.ageGroup,
-        region: demographics?.region,
-        createdAt: new Date().toISOString(),
-      });
-
-      setJustVotedIds((jPrev) => [...jPrev, option.id]); // 낙관적 업데이트용
-      onVote(newVotedIds);
-
-      // 투표를 모두 소진하면 결과 표시
-      if (newVotedIds.length >= getMaxVotes()) {
-        setIsAnimating(true);
-        setTimeout(() => {
-          setShowResults(true);
-          setIsAnimating(false);
-        }, 300);
-      }
-
-      return newVotedIds;
+    saveVote({
+      id: newVoteId,
+      pollId: poll.id,
+      optionId: option.id,
+      userId,
+      gender: demographics?.gender,
+      ageGroup: demographics?.ageGroup,
+      region: demographics?.region,
+      createdAt: new Date().toISOString(),
     });
+
+    setJustVotedIds((jPrev) => [...jPrev, option.id]); // 낙관적 업데이트용
+    onVote(newVotedIds, option.id);
+
+    // 투표를 모두 소진하면 결과 표시
+    if (newVotedIds.length >= getMaxVotes()) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setShowResults(true);
+        setIsAnimating(false);
+      }, 300);
+    }
   };
 
   const userVoteCount = justVotedIds.length;
@@ -248,6 +245,61 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
           </button>
         </div>
       )}
+
+      {/* 전체 투표수 요약 바 (선택지1 vs 선택지2 ...) */}
+      <div className="mt-8 glass-card rounded-2xl p-5 animate-fade-in">
+        <div className="text-sm font-bold text-text-secondary mb-3 flex items-center justify-between">
+          <span>📊 전체 투표 현황 요약</span>
+          <span className="text-xs font-normal text-text-muted">총 {totalVotes.toLocaleString()}표</span>
+        </div>
+
+        {/* VS 텍스트 요약 */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4 text-sm font-extrabold text-text-primary">
+          {updatedOptions.map((opt, i) => (
+            <span key={opt.id} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-text-muted font-normal mx-1">vs</span>}
+              <span className="truncate max-w-[120px]">{opt.label}</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-surface-hover text-primary border border-border">
+                {opt.voteCount.toLocaleString()}표
+              </span>
+            </span>
+          ))}
+        </div>
+
+        {/* 통합 퍼센트 바 (그래프) */}
+        {totalVotes > 0 ? (
+          <div className="w-full h-8 bg-surface-hover rounded-xl overflow-hidden flex shadow-inner border border-border/50">
+            {updatedOptions.map((opt, i) => {
+              const pct = (opt.voteCount / totalVotes) * 100;
+              if (pct === 0) return null;
+              // 색상 팔레트 (옵션별 다르게)
+              const bgColors = [
+                'bg-primary',
+                'bg-blue-500',
+                'bg-purple-500',
+                'bg-amber-500',
+                'bg-emerald-500',
+              ];
+              const bgColor = bgColors[i % bgColors.length];
+
+              return (
+                <div
+                  key={opt.id}
+                  style={{ width: `${pct}%` }}
+                  className={`${bgColor} h-full flex items-center justify-center text-xs font-bold text-white px-1 transition-all duration-500 overflow-hidden first:rounded-l-xl last:rounded-r-xl border-r last:border-r-0 border-black/10`}
+                  title={`${opt.label}: ${pct.toFixed(1)}%`}
+                >
+                  {pct >= 8 ? `${pct.toFixed(0)}%` : ''}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="w-full h-8 bg-surface-hover rounded-xl flex items-center justify-center text-xs text-text-muted">
+            아직 투표가 없습니다
+          </div>
+        )}
+      </div>
 
       {/* 결과 화면 - 투표 취소 버튼 (핑크색) */}
       {showResults && (
