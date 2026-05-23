@@ -160,7 +160,10 @@ export default function CreatePollPage() {
       const { saveUserPollAsync } = await import('@/lib/store');
       await saveUserPollAsync(newPoll);
       // alert 대신 즉시 이동 (정적 빌드에서 alert 후 navigate 시 오류 발생)
-      router.push('/?created=1');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('poll_created', '1');
+      }
+      router.push('/');
     } catch (err) {
       console.error('투표 개설 실패:', err);
       setIsSubmitting(false);

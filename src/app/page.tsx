@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Flame, Clock, BarChart3, Sparkles } from 'lucide-react';
 import PollCard from '@/components/poll/PollCard';
 import RotatingText from '@/components/ui/RotatingText';
@@ -10,18 +9,20 @@ import { Poll } from '@/lib/types';
 
 type SortMode = 'popular' | 'latest' | 'active';
 
-// useSearchParams는 반드시 Suspense로 감싸야 함 (Next.js 정적 빌드 요구사항)
 function CreatedToast() {
-  const searchParams = useSearchParams();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get('created') === '1') {
-      setShow(true);
-      const t = setTimeout(() => setShow(false), 4000);
-      return () => clearTimeout(t);
+    if (typeof window !== 'undefined') {
+      const created = sessionStorage.getItem('poll_created');
+      if (created === '1') {
+        setShow(true);
+        sessionStorage.removeItem('poll_created');
+        const t = setTimeout(() => setShow(false), 4000);
+        return () => clearTimeout(t);
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   if (!show) return null;
 
@@ -74,10 +75,8 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* 투표 개설 성공 토스트 (Suspense 필수) */}
-      <Suspense fallback={null}>
-        <CreatedToast />
-      </Suspense>
+      {/* 투표 개설 성공 토스트 */}
+      <CreatedToast />
 
       {/* Hero Section */}
       <section className="text-center mb-12 animate-fade-in">
