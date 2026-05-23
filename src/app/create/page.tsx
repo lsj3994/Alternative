@@ -32,6 +32,8 @@ export default function CreatePollPage() {
     { id: 'new-1', label: '', imageUrl: '' },
     { id: 'new-2', label: '', imageUrl: '' },
   ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [isGeneratingOption, setIsGeneratingOption] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -119,13 +121,11 @@ export default function CreatePollPage() {
     reader.readAsDataURL(file);
   };
 
-  // 제출
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || options.filter((o) => o.label.trim()).length < 2) {
-      alert('제목과 최소 2개의 선택지를 입력해주세요.');
+      setToast({ type: 'error', message: '제목과 최소 2개의 선택지를 입력해주세요.' });
+      setTimeout(() => setToast(null), 3000);
       return;
     }
 
@@ -159,13 +159,13 @@ export default function CreatePollPage() {
     try {
       const { saveUserPollAsync } = await import('@/lib/store');
       await saveUserPollAsync(newPoll);
-      alert('🎉 투표가 개설되었습니다!');
-      router.push('/');
+      // alert 대신 즉시 이동 (정적 빌드에서 alert 후 navigate 시 오류 발생)
+      router.push('/?created=1');
     } catch (err) {
       console.error('투표 개설 실패:', err);
-      alert('투표 개설에 실패했습니다. 다시 시도해주세요.');
-    } finally {
       setIsSubmitting(false);
+      setToast({ type: 'error', message: '투표 개설에 실패했습니다. 다시 시도해주세요.' });
+      setTimeout(() => setToast(null), 4000);
     }
   };
 
