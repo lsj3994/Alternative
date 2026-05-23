@@ -194,44 +194,18 @@ export default function CreatePollPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up">
-        {/* 제목 */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-2">
-            투표 제목 *
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="예: 짜장면 vs 짬뽕"
-            maxLength={100}
-            className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-text-primary placeholder-text-muted text-lg font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            id="poll-title-input"
-            required
-          />
-        </div>
-
-        {/* 설명 */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-2">
-            설명 (선택)
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="투표에 대한 간단한 설명을 적어보세요..."
-            maxLength={300}
-            rows={2}
-            className="w-full px-4 py-3 rounded-2xl bg-surface border border-border text-text-primary placeholder-text-muted text-sm resize-none focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-          />
-        </div>
-
-        {/* 카테고리 */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-2">
-            카테고리 *
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-8 animate-fade-in-up">
+        {/* ── Step 1: 카테고리 ── */}
+        <div className="glass-card rounded-2xl p-5 border-l-4 border-primary">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">1</span>
+            <div>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Step 1</p>
+              <label className="block text-base font-extrabold text-text-primary">
+                카테고리 선택 <span className="text-primary">*</span>
+              </label>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.filter((c) => c !== '전체').map((cat) => (
               <button
@@ -244,14 +218,67 @@ export default function CreatePollPage() {
               </button>
             ))}
           </div>
+          {!category && (
+            <p className="mt-3 text-xs text-text-muted flex items-center gap-1">
+              <span>💡</span> 카테고리를 먼저 선택하면 더 관련성 높은 이미지가 생성됩니다
+            </p>
+          )}
         </div>
 
-        {/* 선택지 + 이미지 */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-semibold text-text-primary">
-              선택지 * (최소 2개, 최대 5개)
-            </label>
+        {/* ── Step 2: 제목 + 설명 ── */}
+        <div className="glass-card rounded-2xl p-5 border-l-4 border-primary">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">2</span>
+            <div>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Step 2</p>
+              <label className="block text-base font-extrabold text-text-primary">
+                투표 제목 & 설명
+              </label>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-text-secondary mb-1.5">
+                제목 <span className="text-primary">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="예: 짜장면 vs 짬뽕"
+                maxLength={100}
+                className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-text-primary placeholder-text-muted text-lg font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                id="poll-title-input"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-secondary mb-1.5">
+                설명 <span className="text-text-muted font-normal">(선택)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="투표에 대한 간단한 설명을 적어보세요..."
+                maxLength={300}
+                rows={2}
+                className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-text-primary placeholder-text-muted text-sm resize-none focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Step 3: 선택지 + 이미지 ── */}
+        <div className="glass-card rounded-2xl p-5 border-l-4 border-primary">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">3</span>
+            <div>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Step 3</p>
+              <label className="block text-base font-extrabold text-text-primary">
+                선택지 설정 <span className="text-primary">*</span>
+                <span className="text-sm font-normal text-text-muted ml-2">(최소 2개, 최대 5개)</span>
+              </label>
+            </div>
           </div>
 
           <div className="space-y-3">
