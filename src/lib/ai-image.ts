@@ -248,9 +248,50 @@ export async function simulateAIGeneration(prompt: string, optionLabel?: string)
 /**
  * 실제 AI 이미지 생성 함수
  *
- * 현재: SVG 기반 이미지 생성 (선택지 텍스트 기반)
- * 추후 DALL-E 3 연동 시 이 함수의 내부만 교체하면 됩니다.
+ * 1. 기존 사전에 있는 단어는 어울리는 SVG 그래픽 생성
+ * 2. 사전에 없는 단어는 번역 API(MyMemory)로 한->영 번역 후 저작권 프리 이미지(LoremFlickr) 검색하여 실시간 고정 이미지 반환
+ * 3. 예외 상황 시 SVG 생성기로 안전한 폴백
  */
 export async function generateAIImage(prompt: string, optionLabel?: string): Promise<string> {
-  return simulateAIGeneration(prompt, optionLabel);
+  const label = optionLabel || prompt;
+
+  // 1. 기존 사전에 매칭되는 단어면 고품질 SVG 바로 생성
+  const mapping = findBestMapping(label);
+  if (mapping) {
+    return createSVGImage(prompt, label);
+  }
+
+  // 2. 사전에 없는 단어는 실시간 번역 + 저작권 프리 이미지 검색
+  try {
+    const cleanLabel = label.trim();
+    if (cleanLabel) {
+      // MyMemory 무료 번역 API 호출 (한 -> 영)
+      const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanLabel)}&langpair=ko|en`;
+      const transRes = await fetch(translateUrl);
+      if (transRes.ok) {
+        const transData = await transRes.json();
+        const translatedText = transData.responseData?.translatedText || transData.matches?.[0]?.translation;
+        if (translatedText && !translatedText.toLowerCase().includes('mymemory')) {
+          // 공백을 쉼표로 치환하여 태그 검색
+          const query = translatedText
+            .trim()
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .replace(/\s+/g, ',');
+
+          // LoremFlickr에서 해당 태그가 포함된 실시간 무료 이미지 검색
+          // 리다이렉션된 최종 이미지 경로를 리턴받아 영구 고정
+          const imageUrl = `https://loremflickr.com/800/600/${encodeURIComponent(query)}/all`;
+          const imageRes = await fetch(imageUrl);
+          if (imageRes.ok && imageRes.url) {
+            return imageRes.url;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[AI Image Search] 실시간 이미지 검색 실패, SVG로 폴백:', err);
+  }
+
+  // 3. 실패 시 기존 SVG 이미지로 폴백
+  return simulateAIGeneration(prompt, label);
 }
