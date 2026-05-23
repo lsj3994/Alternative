@@ -245,13 +245,34 @@ export async function simulateAIGeneration(prompt: string, optionLabel?: string)
   return createSVGImage(prompt, label);
 }
 
-/**
- * 실제 AI 이미지 생성 함수
- *
- * 1. 기존 사전에 있는 단어는 어울리는 SVG 그래픽 생성
- * 2. 사전에 없는 단어는 번역 API(MyMemory)로 한->영 번역 후 저작권 프리 이미지(LoremFlickr) 검색하여 실시간 고정 이미지 반환
- * 3. 예외 상황 시 SVG 생성기로 안전한 폴백
- */
+// 게임명, 고유 명사 등 한영 번역기 오류 방지를 위한 커스텀 사전
+const SPECIAL_TRANSLATIONS: Record<string, string> = {
+  '롤': 'league-of-legends,lol',
+  '리그오브레전드': 'league-of-legends,lol',
+  '스타': 'starcraft',
+  '스타크래프트': 'starcraft',
+  '배그': 'pubg',
+  '배틀그라운드': 'pubg',
+  '마크': 'minecraft',
+  '마인크래프트': 'minecraft',
+  '오버워치': 'overwatch',
+  '피파': 'fifa,soccer',
+  '발로란트': 'valorant',
+  '던파': 'dungeon-fighter',
+  '메이플': 'maplestory',
+  '로아': 'lost-ark',
+};
+
+// 프롬프트 분석을 통해 검색 품질을 높이기 위한 카테고리 태그 매칭
+function getCategoryTag(prompt: string): string {
+  if (prompt.includes('게임')) return 'gaming,game';
+  if (prompt.includes('음식')) return 'food,cooking';
+  if (prompt.includes('라이프')) return 'lifestyle,life';
+  if (prompt.includes('스포츠')) return 'sports,sport';
+  if (prompt.includes('IT/기술')) return 'technology,tech,computer';
+  if (prompt.includes('연예')) return 'entertainment,celebrity';
+  return '';
+}
 export async function generateAIImage(prompt: string, optionLabel?: string): Promise<string> {
   const label = optionLabel || prompt;
 
@@ -265,26 +286,41 @@ export async function generateAIImage(prompt: string, optionLabel?: string): Pro
   try {
     const cleanLabel = label.trim();
     if (cleanLabel) {
-      // MyMemory 무료 번역 API 호출 (한 -> 영)
-      const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanLabel)}&langpair=ko|en`;
-      const transRes = await fetch(translateUrl);
-      if (transRes.ok) {
-        const transData = await transRes.json();
-        const translatedText = transData.responseData?.translatedText || transData.matches?.[0]?.translation;
-        if (translatedText && !translatedText.toLowerCase().includes('mymemory')) {
-          // 공백을 쉼표로 치환하여 태그 검색
-          const query = translatedText
-            .trim()
-            .replace(/[^a-zA-Z0-9\s]/g, '')
-            .replace(/\s+/g, ',');
+      // 커스텀 번역 사전 먼저 확인
+      let translatedText = SPECIAL_TRANSLATIONS[cleanLabel];
 
-          // LoremFlickr에서 해당 태그가 포함된 실시간 무료 이미지 검색
-          // 리다이렉션된 최종 이미지 경로를 리턴받아 영구 고정
-          const imageUrl = `https://loremflickr.com/800/600/${encodeURIComponent(query)}/all`;
-          const imageRes = await fetch(imageUrl);
-          if (imageRes.ok && imageRes.url) {
-            return imageRes.url;
+      if (!translatedText) {
+        // MyMemory 무료 번역 API 호출 (한 -> 영)
+        const translateUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanLabel)}&langpair=ko|en`;
+        const transRes = await fetch(translateUrl);
+        if (transRes.ok) {
+          const transData = await transRes.json();
+          const translated = transData.responseData?.translatedText || transData.matches?.[0]?.translation;
+          if (translated && !translated.toLowerCase().includes('mymemory')) {
+            translatedText = translated;
           }
+        }
+      }
+
+      if (translatedText) {
+        // 영문 텍스트 특수문자 제거 및 공백을 쉼표로 치환
+        let query = translatedText
+          .trim()
+          .replace(/[^a-zA-Z0-9\s,\-_]/g, '')
+          .replace(/\s+/g, ',');
+
+        // 카테고리 태그 추가 (Flickr 검색 시 연관도가 낮은 키워드의 폴백용)
+        const catTag = getCategoryTag(prompt);
+        if (catTag) {
+          query = `${query},${catTag}`;
+        }
+
+        // LoremFlickr에서 해당 태그가 포함된 실시간 무료 이미지 검색
+        // OR 검색으로 동작하도록 '/all' 접미사 제거
+        const imageUrl = `https://loremflickr.com/800/600/${encodeURIComponent(query)}`;
+        const imageRes = await fetch(imageUrl);
+        if (imageRes.ok && imageRes.url) {
+          return imageRes.url;
         }
       }
     }
