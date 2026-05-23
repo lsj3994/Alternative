@@ -205,7 +205,7 @@ export const AGGRO_COPIES = [
 ];
 
 // ---- 카테고리 목록 ----
-export const CATEGORIES = ['전체', '음식', '라이프', '스포츠', 'IT/기술', '연예', '기타'];
+export const CATEGORIES = ['전체', '음식', '라이프', '스포츠', 'IT/기술', '게임', '연예', '기타'];
 
 // ---- 지역 목록 ----
 export const REGIONS = [
