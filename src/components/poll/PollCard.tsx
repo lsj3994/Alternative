@@ -28,11 +28,11 @@ function timeAgo(dateString: string): string {
 }
 
 export default function PollCard({ poll, index = 0 }: PollCardProps) {
-  const leadingOption = poll.options.reduce((a, b) =>
-    a.voteCount > b.voteCount ? a : b
-  );
+  const leadingOption = poll.options && poll.options.length > 0
+    ? poll.options.reduce((a, b) => (a.voteCount > b.voteCount ? a : b))
+    : null;
   const leadPercent =
-    poll.totalVotes > 0
+    poll.totalVotes > 0 && leadingOption
       ? Math.round((leadingOption.voteCount / poll.totalVotes) * 100)
       : 0;
 
@@ -80,14 +80,16 @@ export default function PollCard({ poll, index = 0 }: PollCardProps) {
         </div>
 
         {/* Leading Info */}
-        <div className="absolute bottom-3 left-3 right-3">
-          <div className="flex items-center gap-2 text-white/80 text-xs">
-            <TrendingUp size={12} />
-            <span>
-              {leadingOption.emoji} {leadingOption.label} 우세 ({leadPercent}%)
-            </span>
+        {leadingOption && (
+          <div className="absolute bottom-3 left-3 right-3">
+            <div className="flex items-center gap-2 text-white/80 text-xs">
+              <TrendingUp size={12} />
+              <span>
+                {leadingOption.emoji || ''} {leadingOption.label} 우세 ({leadPercent}%)
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Content */}
