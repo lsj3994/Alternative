@@ -391,7 +391,7 @@ function EditPollContent() {
           disabled={!isValid || isSubmitting}
           className="w-full btn btn-primary py-4 text-lg rounded-2xl font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
         >
-          {isSubmitting ? <Spinner size="sm" /> : '수정 완료'}
+          {isSubmitting ? <Spinner size={18} /> : '수정 완료'}
         </button>
       </form>
     </div>

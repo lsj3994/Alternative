@@ -18,7 +18,7 @@ import { CheckCircle2, Vote } from 'lucide-react';
 
 interface PollDetailProps {
   poll: Poll;
-  onVote: (optionIds: string[]) => void;
+  onVote: (optionIds: string[], newlyVotedOptionId?: string) => void;
   onNeedSignup: () => void;
 }
 

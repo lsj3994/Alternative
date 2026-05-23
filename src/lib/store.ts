@@ -165,8 +165,6 @@ export function hasVoted(pollId: string): string | null {
   return options.length > 0 ? options[0] : null;
 }
 
-export { getMaxVotes };
-
 /** Supabase에서 투표 기록 동기화 */
 export async function syncVotedOptions(pollId: string, userId: string): Promise<string[]> {
   if (!canUseSupabase()) return getVotedOptions(pollId);
