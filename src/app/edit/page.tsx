@@ -54,7 +54,8 @@ function EditPollContent() {
       }
 
       const currentUser = getUser();
-      if (existing.createdBy !== currentUser?.id) {
+      const isAdmin = currentUser?.loginId === 'admin';
+      if (existing.createdBy !== currentUser?.id && !isAdmin) {
         alert('본인이 개설한 투표만 수정할 수 있습니다.');
         router.push(`/poll?id=${existing.id}`);
         return;

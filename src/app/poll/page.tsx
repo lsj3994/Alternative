@@ -152,7 +152,10 @@ function PollContent() {
   };
 
   const currentUser = getUser();
-  const isCreator = currentUser && poll.createdBy && currentUser.id === poll.createdBy;
+  const isCreator = currentUser && (
+    (poll.createdBy && currentUser.id === poll.createdBy) ||
+    currentUser.loginId === 'admin'
+  );
 
   const handleDelete = async () => {
     if (confirm('정말 이 투표를 삭제하시겠습니까? 연관된 모든 데이터가 삭제됩니다.')) {

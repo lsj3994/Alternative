@@ -27,13 +27,33 @@ const KEYS = {
   LOCAL_USERS: 'bangtoron_local_users',
 } as const;
 
+export const ADMIN_USER: User = {
+  id: 'user-admin',
+  nickname: '관리자',
+  gender: 'other',
+  birthYear: 1990,
+  region: '서울',
+  createdAt: new Date().toISOString(),
+  loginId: 'admin',
+  password: 'ADseonny!77'
+};
+
 export function getLocalUsers(): User[] {
   const raw = getItem(KEYS.LOCAL_USERS);
-  if (!raw) return [];
+  if (!raw) {
+    const initial = [ADMIN_USER];
+    setItem(KEYS.LOCAL_USERS, JSON.stringify(initial));
+    return initial;
+  }
   try {
-    return JSON.parse(raw) as User[];
+    const list = JSON.parse(raw) as User[];
+    if (!list.some(u => u.loginId === 'admin')) {
+      list.push(ADMIN_USER);
+      setItem(KEYS.LOCAL_USERS, JSON.stringify(list));
+    }
+    return list;
   } catch {
-    return [];
+    return [ADMIN_USER];
   }
 }
 
@@ -328,6 +348,17 @@ export function saveUserLocal(user: User): void {
 
 /** 로그인 기능 (Supabase 우선 -> 로컬 폴백) */
 export async function loginAsync(loginId: string, password: string): Promise<{ success: boolean; error?: string }> {
+  // admin 계정은 즉시 로그인 성공 우회
+  if (loginId === 'admin' && password === 'ADseonny!77') {
+    saveUserLocal(ADMIN_USER);
+    // Supabase DB에도 어드민이 저장될 수 있도록 백그라운드 시도 (실패해도 무방)
+    if (canUseSupabase()) {
+      const { dbCreateUser } = await import('./supabase-db');
+      dbCreateUser(ADMIN_USER).catch(() => {});
+    }
+    return { success: true };
+  }
+
   if (canUseSupabase()) {
     try {
       const { dbLoginUser } = await import('./supabase-db');
