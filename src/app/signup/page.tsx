@@ -11,6 +11,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [nickname, setNickname] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other' | ''>('');
   const [birthYear, setBirthYear] = useState('');
@@ -38,6 +39,9 @@ export default function SignupPage() {
 
     if (!password) newErrors.password = '비밀번호를 입력해주세요';
     else if (password.length < 4) newErrors.password = '비밀번호는 4자 이상이어야 합니다';
+
+    if (!confirmPassword) newErrors.confirmPassword = '비밀번호를 한 번 더 입력해주세요';
+    else if (password !== confirmPassword) newErrors.confirmPassword = '비밀번호가 일치하지 않습니다';
 
     if (!nickname.trim()) newErrors.nickname = '닉네임을 입력해주세요';
     else if (nickname.trim().length < 2) newErrors.nickname = '2자 이상 입력해주세요';
@@ -150,6 +154,29 @@ export default function SignupPage() {
             />
             {errors.password && (
               <p className="text-xs text-danger mt-1.5 ml-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* 비밀번호 확인 */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
+              <span className="text-sm">✔️</span>
+              비밀번호 확인
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="비밀번호 확인"
+              className={`w-full px-4 py-3.5 rounded-2xl bg-surface border text-text-primary placeholder-text-muted text-base font-medium focus:outline-none focus:ring-2 transition-all ${
+                errors.confirmPassword
+                  ? 'border-danger focus:ring-danger/20'
+                  : 'border-border focus:border-primary focus:ring-primary/20'
+              }`}
+              id="signup-confirmpassword"
+            />
+            {errors.confirmPassword && (
+              <p className="text-xs text-danger mt-1.5 ml-1">{errors.confirmPassword}</p>
             )}
           </div>
 
