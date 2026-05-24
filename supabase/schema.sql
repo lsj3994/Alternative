@@ -46,9 +46,8 @@ CREATE TABLE IF NOT EXISTS votes (
   gender TEXT,
   age_group TEXT,
   region TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  -- 같은 유저가 같은 옵션에 중복 투표 방지
-  UNIQUE(poll_id, option_id, user_id)
+  created_at TIMESTAMPTZ DEFAULT NOW()
+  -- 동일 옵션에 여러 표를 행사할 수 있도록 UNIQUE 제약 조건을 제거했습니다.
 );
 
 -- 5. comments 테이블

@@ -24,6 +24,8 @@ interface PollDetailProps {
 
 export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailProps) {
   const [votedOptionIds, setVotedOptionIds] = useState<string[]>([]);
+  const [initialVotedIds, setInitialVotedIds] = useState<string[]>([]);
+  const [isCancelled, setIsCancelled] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [justVotedIds, setJustVotedIds] = useState<string[]>([]);
@@ -34,6 +36,7 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
   useEffect(() => {
     const voted = getVotedOptions(poll.id);
     if (voted.length > 0 || isAdminDeleted) {
+      setInitialVotedIds(voted);
       setVotedOptionIds(voted);
       setShowResults(true);
     }
@@ -44,6 +47,7 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
       cancelVote(poll.id);
       setVotedOptionIds([]);
       setJustVotedIds([]);
+      setIsCancelled(true);
       setShowResults(false);
       onVote([]); // 부모 컴포넌트에 투표 상태 초기화 전달
     }
@@ -86,13 +90,19 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
   };
 
   const userVoteCount = justVotedIds.length;
+  const pastUserTotalVotes = initialVotedIds.length;
+  const baseTotalVotes = isCancelled ? Math.max(0, poll.totalVotes - pastUserTotalVotes) : poll.totalVotes;
+  const totalVotes = baseTotalVotes + userVoteCount;
 
-  const updatedOptions = poll.options.map((opt) => ({
-    ...opt,
-    voteCount: opt.voteCount + justVotedIds.filter((id) => id === opt.id).length,
-  }));
+  const updatedOptions = poll.options.map((opt) => {
+    const pastUserVotes = initialVotedIds.filter((id) => id === opt.id).length;
+    const baseVoteCount = isCancelled ? Math.max(0, opt.voteCount - pastUserVotes) : opt.voteCount;
+    return {
+      ...opt,
+      voteCount: baseVoteCount + justVotedIds.filter((id) => id === opt.id).length,
+    };
+  });
 
-  const totalVotes = poll.totalVotes + userVoteCount;
   const maxVotes = Math.max(...updatedOptions.map((o) => o.voteCount));
   const remainingVotes = getMaxVotes() - votedOptionIds.length;
 
