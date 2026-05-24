@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Comment, PollOption } from '@/lib/types';
 import { getNickname, saveNickname, saveComment, isLoggedIn, getUser } from '@/lib/store';
 import { Send } from 'lucide-react';
@@ -18,6 +18,13 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
   const [nickname, setNickname] = useState(user?.nickname || getNickname());
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedOptionId, setSelectedOptionId] = useState(votedOptionId || options[0]?.id);
+
+  useEffect(() => {
+    if (votedOptionId) {
+      setSelectedOptionId(votedOptionId);
+    }
+  }, [votedOptionId]);
 
   if (!isLoggedIn()) {
     return (
@@ -30,7 +37,7 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
     );
   }
 
-  const votedOption = options.find((o) => o.id === votedOptionId);
+  const selectedOption = options.find((o) => o.id === selectedOptionId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +51,8 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
       pollId,
       userId: user?.id || 'unknown',
       nickname: nickname.trim(),
-      optionId: votedOptionId,
-      optionLabel: votedOption?.label || '',
+      optionId: selectedOptionId,
+      optionLabel: selectedOption?.label || '',
       content: content.trim(),
       likes: 0,
       dislikes: 0,
@@ -60,10 +67,20 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
 
   return (
     <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-sm text-text-muted">
-          {votedOption?.emoji} <strong>{votedOption?.label}</strong> 진영으로 댓글 작성
-        </span>
+      <div className="mb-3">
+        <span className="block text-sm text-text-muted mb-2 font-medium">어느 진영으로 의견을 남기시겠어요?</span>
+        <div className="flex flex-wrap gap-2">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setSelectedOptionId(option.id)}
+              className={`pill ${selectedOptionId === option.id ? 'active' : ''}`}
+            >
+              {option.emoji} {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-2 mb-3">
