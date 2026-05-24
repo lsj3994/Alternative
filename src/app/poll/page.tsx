@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ArrowLeft, BarChart3, Share2, Trash2, Edit3 } from 'lucide-react';
-import { getPollById, getPollComments, getPollStats, fetchPollById, fetchPollComments, fetchPollStats, deletePoll } from '@/lib/data';
+import { getPollById, getPollComments, getPollStats, fetchPollById, fetchPollComments, fetchPollStats, deletePoll, updatePoll } from '@/lib/data';
 import { getVotedOptions, getUser, isLoggedIn, getDemographics } from '@/lib/store';
 import PollDetail from '@/components/poll/PollDetail';
 import CommentSection from '@/components/comment/CommentSection';
@@ -158,13 +158,64 @@ function PollContent() {
   );
 
   const handleDelete = async () => {
-    if (confirm('정말 이 투표를 삭제하시겠습니까? 연관된 모든 데이터가 삭제됩니다.')) {
-      const res = await deletePoll(poll.id);
-      if (res.success) {
-        alert('투표가 삭제되었습니다.');
-        router.push('/');
-      } else {
-        alert(`삭제 실패: ${res.error}`);
+    const isAdmin = currentUser?.loginId === 'admin';
+
+    if (isAdmin) {
+      const reason = prompt('관리자 권한으로 삭제합니다. 삭제 사유(코멘트)를 입력해주세요:');
+      if (reason === null) return; // 취소
+      if (!reason.trim()) {
+        alert('삭제 사유는 필수 입력입니다.');
+        return;
+      }
+
+      if (confirm('관리자 권한으로 이 투표를 삭제 처리하시겠습니까?')) {
+        const optionsData = poll.options.map((o) => ({
+          id: o.id,
+          label: o.label,
+          imageUrl: o.imageUrl || undefined,
+          emoji: o.emoji || undefined,
+        }));
+
+        const res = await updatePoll(
+          poll.id,
+          {
+            status: 'closed',
+            description: `[ADMIN_DELETED]:${reason.trim()}`,
+          },
+          optionsData
+        );
+
+        if (res.success) {
+          alert('투표가 관리자 권한으로 삭제 처리되었습니다.');
+          router.push('/');
+        } else {
+          alert(`삭제 처리 실패: ${res.error}`);
+        }
+      }
+    } else {
+      if (confirm('정말 이 투표를 삭제하시겠습니까?')) {
+        const optionsData = poll.options.map((o) => ({
+          id: o.id,
+          label: o.label,
+          imageUrl: o.imageUrl || undefined,
+          emoji: o.emoji || undefined,
+        }));
+
+        const res = await updatePoll(
+          poll.id,
+          {
+            status: 'closed',
+            description: `[USER_DELETED]:${new Date().toISOString()}`,
+          },
+          optionsData
+        );
+
+        if (res.success) {
+          alert('투표가 삭제되었습니다.');
+          router.push('/');
+        } else {
+          alert(`삭제 실패: ${res.error}`);
+        }
       }
     }
   };

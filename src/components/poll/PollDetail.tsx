@@ -28,13 +28,16 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
   const [showResults, setShowResults] = useState(false);
   const [justVotedIds, setJustVotedIds] = useState<string[]>([]);
 
+  const isAdminDeleted = poll.description?.startsWith('[ADMIN_DELETED]:') || false;
+  const adminComment = isAdminDeleted ? poll.description?.substring('[ADMIN_DELETED]:'.length) : '';
+
   useEffect(() => {
     const voted = getVotedOptions(poll.id);
-    if (voted.length > 0) {
+    if (voted.length > 0 || isAdminDeleted) {
       setVotedOptionIds(voted);
       setShowResults(true);
     }
-  }, [poll.id]);
+  }, [poll.id, isAdminDeleted]);
 
   const handleCancelVote = () => {
     if (confirm('투표를 취소하고 다시 선택하시겠습니까?')) {
@@ -100,15 +103,25 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
         <h1 className="text-3xl md:text-4xl font-extrabold text-text-primary mb-2">
           {poll.title}
         </h1>
-        {poll.description && (
+        {isAdminDeleted && (
+          <div className="mb-4 p-4 rounded-2xl bg-danger/10 border border-danger/20 text-danger animate-fade-in">
+            <h4 className="font-bold mb-1 flex items-center gap-1.5 text-base">
+              🚫 관리자에 의해 삭제된 투표
+            </h4>
+            <p className="text-sm font-medium">
+              사유: {adminComment}
+            </p>
+          </div>
+        )}
+        {poll.description && !isAdminDeleted && (
           <p className="text-text-secondary text-base md:text-lg">
             {poll.description}
           </p>
         )}
         <div className="mt-3 flex items-center gap-3 text-sm text-text-muted">
-          <span className={`badge ${poll.status === 'active' ? 'badge-live' : 'badge-closed'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'}`} />
-            {poll.status === 'active' ? '진행중' : '종료'}
+          <span className={`badge ${isAdminDeleted ? 'bg-danger text-white' : poll.status === 'active' ? 'badge-live' : 'badge-closed'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isAdminDeleted ? 'bg-white' : poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'}`} />
+            {isAdminDeleted ? '삭제됨' : poll.status === 'active' ? '진행중' : '종료'}
           </span>
           <span>총 {totalVotes.toLocaleString()}명 참여</span>
         </div>
@@ -302,7 +315,7 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
       </div>
 
       {/* 결과 화면 - 투표 취소 버튼 (핑크색) */}
-      {showResults && (
+      {showResults && !isAdminDeleted && (
         <div className="mt-8 flex justify-center animate-fade-in">
           <button
             onClick={handleCancelVote}

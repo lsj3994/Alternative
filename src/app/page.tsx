@@ -76,9 +76,11 @@ export default function HomePage() {
     return () => { cancelled = true; };
   }, []);
 
-  const filtered = allPolls.filter(
-    (p) => category === '전체' || p.category === category
-  );
+  const filtered = allPolls.filter((p) => {
+    const isUserDeleted = p.description?.startsWith('[USER_DELETED]');
+    const matchesCategory = category === '전체' || p.category === category;
+    return !isUserDeleted && matchesCategory;
+  });
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortMode === 'popular') return b.totalVotes - a.totalVotes;

@@ -28,18 +28,23 @@ function timeAgo(dateString: string): string {
 }
 
 export default function PollCard({ poll, index = 0 }: PollCardProps) {
-  const leadingOption = poll.options && poll.options.length > 0
+  const isAdminDeleted = poll.description?.startsWith('[ADMIN_DELETED]:');
+  const adminComment = isAdminDeleted ? poll.description?.substring('[ADMIN_DELETED]:'.length) : '';
+
+  const leadingOption = !isAdminDeleted && poll.options && poll.options.length > 0
     ? poll.options.reduce((a, b) => (a.voteCount > b.voteCount ? a : b))
     : null;
   const leadPercent =
-    poll.totalVotes > 0 && leadingOption
+    !isAdminDeleted && poll.totalVotes > 0 && leadingOption
       ? Math.round((leadingOption.voteCount / poll.totalVotes) * 100)
       : 0;
 
   return (
     <Link
       href={`/poll?id=${poll.id}`}
-      className={`group block glass-card rounded-2xl overflow-hidden hover-lift hover-glow animate-fade-in-up`}
+      className={`group block glass-card rounded-2xl overflow-hidden hover-lift hover-glow animate-fade-in-up ${
+        isAdminDeleted ? 'opacity-80 border-danger/30 bg-danger/5' : ''
+      }`}
       style={{ animationDelay: `${index * 0.07}s`, animationFillMode: 'both' }}
       id={`poll-card-${poll.id}`}
     >
@@ -60,15 +65,15 @@ export default function PollCard({ poll, index = 0 }: PollCardProps) {
         <div className="absolute top-3 left-3">
           <span
             className={`badge ${
-              poll.status === 'active' ? 'badge-live' : 'badge-closed'
+              isAdminDeleted ? 'bg-danger text-white' : poll.status === 'active' ? 'badge-live' : 'badge-closed'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'
+                isAdminDeleted ? 'bg-white' : poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'
               }`}
             />
-            {poll.status === 'active' ? '진행중' : '종료'}
+            {isAdminDeleted ? '삭제됨' : poll.status === 'active' ? '진행중' : '종료'}
           </span>
         </div>
 
@@ -99,21 +104,27 @@ export default function PollCard({ poll, index = 0 }: PollCardProps) {
         </h3>
         {poll.description && (
           <p className="mt-1 text-sm text-text-secondary line-clamp-2">
-            {poll.description}
+            {isAdminDeleted ? `🚫 관리자 삭제 사유: ${adminComment}` : poll.description}
           </p>
         )}
 
         {/* Options Preview */}
-        <div className="mt-3 flex gap-2">
-          {poll.options.map((opt) => (
-            <span
-              key={opt.id}
-              className="flex-1 text-center py-1.5 px-2 rounded-lg bg-surface-hover text-xs font-medium text-text-secondary truncate"
-            >
-              {opt.emoji} {opt.label}
-            </span>
-          ))}
-        </div>
+        {!isAdminDeleted ? (
+          <div className="mt-3 flex gap-2">
+            {poll.options.map((opt) => (
+              <span
+                key={opt.id}
+                className="flex-1 text-center py-1.5 px-2 rounded-lg bg-surface-hover text-xs font-medium text-text-secondary truncate"
+              >
+                {opt.emoji} {opt.label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 py-1.5 px-3 rounded-lg bg-danger/10 text-xs font-semibold text-danger truncate">
+            관리자에 의해 삭제 조치된 투표입니다.
+          </div>
+        )}
 
         {/* Meta */}
         <div className="mt-3 flex items-center justify-between text-xs text-text-muted">
