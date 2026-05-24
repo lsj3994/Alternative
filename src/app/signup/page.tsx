@@ -175,8 +175,14 @@ export default function SignupPage() {
               }`}
               id="signup-confirmpassword"
             />
-            {errors.confirmPassword && (
+            {errors.confirmPassword ? (
               <p className="text-xs text-danger mt-1.5 ml-1">{errors.confirmPassword}</p>
+            ) : confirmPassword && (
+              <p className={`text-xs mt-1.5 ml-1 font-semibold ${
+                password === confirmPassword ? 'text-success' : 'text-danger'
+              }`}>
+                {password === confirmPassword ? '✓ 비밀번호가 일치합니다' : '✗ 비밀번호가 일치하지 않습니다'}
+              </p>
             )}
           </div>
 
