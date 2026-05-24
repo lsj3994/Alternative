@@ -298,7 +298,7 @@ export async function fetchPollStats(pollId: string): Promise<PollStats | undefi
 export async function updatePoll(
   pollId: string,
   pollData: Partial<Omit<Poll, 'id' | 'totalVotes' | 'createdAt' | 'createdBy'>>,
-  optionsData: { id: string; label: string; imageUrl?: string; emoji?: string }[]
+  optionsData?: { id: string; label: string; imageUrl?: string; emoji?: string }[]
 ): Promise<{ success: boolean; error?: string }> {
   if (canUseSupabase()) {
     const res = await dbUpdatePoll(pollId, pollData, optionsData);
@@ -310,12 +310,14 @@ export async function updatePoll(
             ? {
                 ...p,
                 ...pollData,
-                options: optionsData.map((o) => ({
-                  id: o.id,
-                  label: o.label,
-                  imageUrl: o.imageUrl,
-                  voteCount: p.options.find((old) => old.id === o.id)?.voteCount || 0,
-                })),
+                ...(optionsData ? {
+                  options: optionsData.map((o) => ({
+                    id: o.id,
+                    label: o.label,
+                    imageUrl: o.imageUrl,
+                    voteCount: p.options.find((old) => old.id === o.id)?.voteCount || 0,
+                  })),
+                } : {})
               }
             : p
         );

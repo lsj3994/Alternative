@@ -198,20 +198,12 @@ function PollContent() {
       }
 
       if (confirm('관리자 권한으로 이 투표를 삭제 처리하시겠습니까?')) {
-        const optionsData = poll.options.map((o) => ({
-          id: o.id,
-          label: o.label,
-          imageUrl: o.imageUrl || undefined,
-          emoji: o.emoji || undefined,
-        }));
-
         const res = await updatePoll(
           poll.id,
           {
             status: 'closed',
             description: `[ADMIN_DELETED]:${reason.trim()}`,
-          },
-          optionsData
+          }
         );
 
         if (res.success) {
@@ -223,20 +215,12 @@ function PollContent() {
       }
     } else {
       if (confirm('정말 이 투표를 삭제하시겠습니까?')) {
-        const optionsData = poll.options.map((o) => ({
-          id: o.id,
-          label: o.label,
-          imageUrl: o.imageUrl || undefined,
-          emoji: o.emoji || undefined,
-        }));
-
         const res = await updatePoll(
           poll.id,
           {
             status: 'closed',
             description: `[USER_DELETED]:${new Date().toISOString()}`,
-          },
-          optionsData
+          }
         );
 
         if (res.success) {

@@ -416,7 +416,7 @@ export async function dbCreatePoll(
 export async function dbUpdatePoll(
   pollId: string,
   pollData: Partial<Omit<Poll, 'id' | 'totalVotes' | 'createdAt' | 'createdBy'>>,
-  optionsData: { id: string; label: string; imageUrl?: string; emoji?: string }[]
+  optionsData?: { id: string; label: string; imageUrl?: string; emoji?: string }[]
 ): Promise<{ success: boolean; error?: string }> {
   const client = getSupabaseClient();
   if (!client) return { success: false, error: 'Supabase 미연결' };
@@ -437,34 +437,36 @@ export async function dbUpdatePoll(
     }
   }
 
-  // 2. Handle options (Upsert & Delete)
-  const optionIdsToKeep = optionsData.map(o => o.id);
+  // 2. Handle options (Upsert & Delete) ONLY IF optionsData is provided
+  if (optionsData) {
+    const optionIdsToKeep = optionsData.map(o => o.id);
 
-  // Delete removed options
-  const { error: deleteError } = await client
-    .from('poll_options')
-    .delete()
-    .eq('poll_id', pollId)
-    .not('id', 'in', `(${optionIdsToKeep.join(',')})`);
+    // Delete removed options
+    const { error: deleteError } = await client
+      .from('poll_options')
+      .delete()
+      .eq('poll_id', pollId)
+      .not('id', 'in', `(${optionIdsToKeep.join(',')})`);
 
-  if (deleteError) {
-    console.error('[Supabase] 기존 Options 삭제 실패:', deleteError.message);
-  }
+    if (deleteError) {
+      console.error('[Supabase] 기존 Options 삭제 실패:', deleteError.message);
+    }
 
-  // Upsert current options
-  const optionRows = optionsData.map((opt) => ({
-    id: opt.id,
-    poll_id: pollId,
-    label: opt.label,
-    image_url: opt.imageUrl || null,
-    emoji: opt.emoji || null,
-  }));
+    // Upsert current options
+    const optionRows = optionsData.map((opt) => ({
+      id: opt.id,
+      poll_id: pollId,
+      label: opt.label,
+      image_url: opt.imageUrl || null,
+      emoji: opt.emoji || null,
+    }));
 
-  const { error: upsertError } = await client.from('poll_options').upsert(optionRows);
+    const { error: upsertError } = await client.from('poll_options').upsert(optionRows);
 
-  if (upsertError) {
-    console.error('[Supabase] Options 업데이트 실패:', upsertError.message);
-    return { success: false, error: upsertError.message };
+    if (upsertError) {
+      console.error('[Supabase] Options 업데이트 실패:', upsertError.message);
+      return { success: false, error: upsertError.message };
+    }
   }
 
   return { success: true };
