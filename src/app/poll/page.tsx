@@ -151,6 +151,35 @@ function PollContent() {
     }
   };
 
+  const handleCancel = (cancelledOptionIds: string[]) => {
+    if (stats) {
+      const demographics = getDemographics();
+      const isGuest = !isLoggedIn();
+
+      const gender = isGuest ? '미가입자' : demographics?.gender || 'other';
+      const ageGroup = isGuest ? '미가입자' : demographics?.ageGroup || 'unknown';
+      const region = isGuest ? '미가입자' : demographics?.region || 'unknown';
+
+      const newStats = JSON.parse(JSON.stringify(stats)) as PollStatsType;
+
+      cancelledOptionIds.forEach((optId) => {
+        // Decrease gender
+        const gEntry = newStats.gender.find((g) => g.gender === gender);
+        if (gEntry && gEntry.counts[optId] > 0) gEntry.counts[optId] -= 1;
+
+        // Decrease age
+        const aEntry = newStats.age.find((a) => a.ageGroup === ageGroup);
+        if (aEntry && aEntry.counts[optId] > 0) aEntry.counts[optId] -= 1;
+
+        // Decrease region
+        const rEntry = newStats.region.find((r) => r.region === region);
+        if (rEntry && rEntry.counts[optId] > 0) rEntry.counts[optId] -= 1;
+      });
+
+      setStats(newStats);
+    }
+  };
+
   const currentUser = getUser();
   const isCreator = currentUser && (
     (poll.createdBy && currentUser.id === poll.createdBy) ||
@@ -267,12 +296,14 @@ function PollContent() {
         </div>
       )}
 
-      {/* Poll Detail */}
-      <PollDetail
-        poll={poll}
-        onVote={handleVote}
-        onNeedSignup={() => router.push('/signup')}
-      />
+      <div className="mb-6">
+        <PollDetail
+          poll={poll}
+          onVote={handleVote}
+          onCancel={handleCancel}
+          onNeedSignup={() => alert('투표 기능은 모두 이용할 수 있습니다. (댓글 작성은 로그인 필요)')}
+        />
+      </div>
 
       {/* Comments (Moved below PollDetail) */}
       <CommentSection

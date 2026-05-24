@@ -19,10 +19,11 @@ import { CheckCircle2, Vote } from 'lucide-react';
 interface PollDetailProps {
   poll: Poll;
   onVote: (optionIds: string[], newlyVotedOptionId?: string) => void;
+  onCancel?: (cancelledOptionIds: string[]) => void;
   onNeedSignup: () => void;
 }
 
-export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailProps) {
+export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: PollDetailProps) {
   const [votedOptionIds, setVotedOptionIds] = useState<string[]>([]);
   const [initialVotedIds, setInitialVotedIds] = useState<string[]>([]);
   const [isCancelled, setIsCancelled] = useState(false);
@@ -45,11 +46,18 @@ export default function PollDetail({ poll, onVote, onNeedSignup }: PollDetailPro
   const handleCancelVote = () => {
     if (confirm('투표를 취소하고 다시 선택하시겠습니까?')) {
       cancelVote(poll.id);
+      
+      const cancelledIds = [...initialVotedIds, ...justVotedIds];
+
       setVotedOptionIds([]);
       setJustVotedIds([]);
       setIsCancelled(true);
       setShowResults(false);
       onVote([]); // 부모 컴포넌트에 투표 상태 초기화 전달
+      
+      if (onCancel) {
+        onCancel(cancelledIds);
+      }
     }
   };
 
