@@ -180,31 +180,77 @@ export async function dbFetchPolls(): Promise<Poll[]> {
     return [];
   }
 
-  // 각 투표의 옵션과 투표 수를 가져옴
   const result: Poll[] = [];
 
   for (const poll of polls) {
-    // 옵션별 투표 수 조회
-    const { data: optionCounts } = await client
-      .from('poll_option_counts')
-      .select('*')
-      .eq('poll_id', poll.id);
+    let options: PollOption[] = [];
+    try {
+      const { data: optionCounts, error: viewError } = await client
+        .from('poll_option_counts')
+        .select('*')
+        .eq('poll_id', poll.id);
 
-    // 총 투표 수 조회
-    const { data: totalData } = await client
-      .from('poll_total_votes')
-      .select('total_votes')
-      .eq('poll_id', poll.id)
-      .maybeSingle();
+      if (!viewError && optionCounts && optionCounts.length > 0) {
+        options = optionCounts.map((oc) => ({
+          id: oc.option_id,
+          pollId: oc.poll_id,
+          label: oc.label,
+          imageUrl: oc.image_url || undefined,
+          emoji: oc.emoji || undefined,
+          voteCount: Number(oc.vote_count) || 0,
+        }));
+      } else {
+        throw new Error('View fallback');
+      }
+    } catch (err) {
+      // raw 테이블 폴백
+      const { data: rawOptions } = await client
+        .from('poll_options')
+        .select('*')
+        .eq('poll_id', poll.id);
 
-    const options: PollOption[] = (optionCounts || []).map((oc) => ({
-      id: oc.option_id,
-      pollId: oc.poll_id,
-      label: oc.label,
-      imageUrl: oc.image_url || undefined,
-      emoji: oc.emoji || undefined,
-      voteCount: Number(oc.vote_count) || 0,
-    }));
+      if (rawOptions) {
+        options = await Promise.all(
+          rawOptions.map(async (ro) => {
+            const { count } = await client
+              .from('votes')
+              .select('*', { count: 'exact', head: true })
+              .eq('poll_id', poll.id)
+              .eq('option_id', ro.id);
+
+            return {
+              id: ro.id,
+              pollId: ro.poll_id,
+              label: ro.label,
+              imageUrl: ro.image_url || undefined,
+              emoji: ro.emoji || undefined,
+              voteCount: count || 0,
+            };
+          })
+        );
+      }
+    }
+
+    let totalVotes = 0;
+    try {
+      const { data: totalData, error: viewError } = await client
+        .from('poll_total_votes')
+        .select('total_votes')
+        .eq('poll_id', poll.id)
+        .maybeSingle();
+
+      if (!viewError && totalData) {
+        totalVotes = Number(totalData.total_votes) || 0;
+      } else {
+        throw new Error('View fallback');
+      }
+    } catch (err) {
+      const { count } = await client
+        .from('votes')
+        .select('*', { count: 'exact', head: true })
+        .eq('poll_id', poll.id);
+      totalVotes = count || 0;
+    }
 
     result.push({
       id: poll.id,
@@ -214,7 +260,7 @@ export async function dbFetchPolls(): Promise<Poll[]> {
       thumbnailUrl: poll.thumbnail_url || undefined,
       category: poll.category,
       options,
-      totalVotes: Number(totalData?.total_votes) || 0,
+      totalVotes,
       createdAt: poll.created_at,
       createdBy: poll.created_by || undefined,
     });
@@ -228,6 +274,7 @@ export async function dbFetchPollById(id: string): Promise<Poll | null> {
   const client = getSupabaseClient();
   if (!client) return null;
 
+  // 1. 투표 기본 정보 조회
   const { data: poll, error } = await client
     .from('polls')
     .select('*')
@@ -236,25 +283,76 @@ export async function dbFetchPollById(id: string): Promise<Poll | null> {
 
   if (error || !poll) return null;
 
-  const { data: optionCounts } = await client
-    .from('poll_option_counts')
-    .select('*')
-    .eq('poll_id', id);
+  // 2. 옵션 정보 조회 (뷰 조회를 먼저 시도하되, 실패 시 raw 테이블에서 조회)
+  let options: PollOption[] = [];
+  try {
+    const { data: optionCounts, error: viewError } = await client
+      .from('poll_option_counts')
+      .select('*')
+      .eq('poll_id', id);
 
-  const { data: totalData } = await client
-    .from('poll_total_votes')
-    .select('total_votes')
-    .eq('poll_id', id)
-    .maybeSingle();
+    if (!viewError && optionCounts && optionCounts.length > 0) {
+      options = optionCounts.map((oc) => ({
+        id: oc.option_id,
+        pollId: oc.poll_id,
+        label: oc.label,
+        imageUrl: oc.image_url || undefined,
+        emoji: oc.emoji || undefined,
+        voteCount: Number(oc.vote_count) || 0,
+      }));
+    } else {
+      throw new Error('View fallback');
+    }
+  } catch (err) {
+    // raw poll_options 테이블에서 조회
+    const { data: rawOptions } = await client
+      .from('poll_options')
+      .select('*')
+      .eq('poll_id', id);
 
-  const options: PollOption[] = (optionCounts || []).map((oc) => ({
-    id: oc.option_id,
-    pollId: oc.poll_id,
-    label: oc.label,
-    imageUrl: oc.image_url || undefined,
-    emoji: oc.emoji || undefined,
-    voteCount: Number(oc.vote_count) || 0,
-  }));
+    if (rawOptions) {
+      options = await Promise.all(
+        rawOptions.map(async (ro) => {
+          const { count } = await client
+            .from('votes')
+            .select('*', { count: 'exact', head: true })
+            .eq('poll_id', id)
+            .eq('option_id', ro.id);
+
+          return {
+            id: ro.id,
+            pollId: ro.poll_id,
+            label: ro.label,
+            imageUrl: ro.image_url || undefined,
+            emoji: ro.emoji || undefined,
+            voteCount: count || 0,
+          };
+        })
+      );
+    }
+  }
+
+  // 3. 총 투표 수 계산
+  let totalVotes = 0;
+  try {
+    const { data: totalData, error: viewError } = await client
+      .from('poll_total_votes')
+      .select('total_votes')
+      .eq('poll_id', id)
+      .maybeSingle();
+
+    if (!viewError && totalData) {
+      totalVotes = Number(totalData.total_votes) || 0;
+    } else {
+      throw new Error('View fallback');
+    }
+  } catch (err) {
+    const { count } = await client
+      .from('votes')
+      .select('*', { count: 'exact', head: true })
+      .eq('poll_id', id);
+    totalVotes = count || 0;
+  }
 
   return {
     id: poll.id,
@@ -264,7 +362,7 @@ export async function dbFetchPollById(id: string): Promise<Poll | null> {
     thumbnailUrl: poll.thumbnail_url || undefined,
     category: poll.category,
     options,
-    totalVotes: Number(totalData?.total_votes) || 0,
+    totalVotes,
     createdAt: poll.created_at,
     createdBy: poll.created_by || undefined,
   };
