@@ -85,10 +85,15 @@ export default function Header() {
           {/* User / Auth */}
           {nickname ? (
             <div className="flex items-center gap-2 ml-2">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-light text-primary text-sm font-semibold">
+              <Link
+                href="/profile"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-light text-primary text-sm font-semibold hover:bg-primary hover:text-white transition-all"
+                title="회원 정보"
+                id="header-profile-link"
+              >
                 <User size={14} />
                 {nickname}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-xl text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
@@ -133,10 +138,15 @@ export default function Header() {
         {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 md:hidden">
           {nickname && (
-            <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary-light text-primary text-xs font-semibold">
+            <Link
+              href="/profile"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-light text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-all"
+              title="회원 정보"
+              id="mobile-profile-link"
+            >
               <User size={12} />
               {nickname}
-            </span>
+            </Link>
           )}
           <button
             onClick={toggleTheme}

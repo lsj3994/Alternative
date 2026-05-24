@@ -384,6 +384,31 @@ export function logout(): void {
   } catch { /* ignore */ }
 }
 
+/** 회원 탈퇴 기능 (Supabase 우선 -> 로컬 폴백) */
+export async function deleteUserAsync(id: string): Promise<{ success: boolean; error?: string }> {
+  if (canUseSupabase()) {
+    try {
+      const { dbDeleteUser } = await import('./supabase-db');
+      const res = await dbDeleteUser(id);
+      if (!res.success) {
+        return res;
+      }
+    } catch (err) {
+      console.warn('[Supabase] 유저 삭제 에러, 로컬로 계속 진행:', err);
+    }
+  }
+
+  // 로컬스토리지 전체 가입 유저 목록에서 제거
+  const localUsers = getLocalUsers();
+  const updatedUsers = localUsers.filter((u) => u.id !== id);
+  setItem(KEYS.LOCAL_USERS, JSON.stringify(updatedUsers));
+
+  // 로그아웃 처리 (로그인 세션 지우기)
+  logout();
+
+  return { success: true };
+}
+
 // ---- User Created Polls ----
 export async function saveUserPollAsync(poll: Poll): Promise<{ success: boolean; error?: string }> {
   // Supabase에 저장 시도

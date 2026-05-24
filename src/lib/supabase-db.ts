@@ -143,6 +143,24 @@ export async function dbCheckLoginIdDuplicate(loginId: string): Promise<boolean>
   return !!data;
 }
 
+/** 회원 탈퇴 — Supabase에서 유저 제거 */
+export async function dbDeleteUser(id: string): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase 미연결' };
+
+  const { error } = await client
+    .from('users')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('[Supabase] 유저 삭제 실패:', error.message);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
 // ============================================================
 // Polls
 // ============================================================

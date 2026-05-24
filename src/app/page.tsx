@@ -17,6 +17,7 @@ function SessionToast() {
       const created = sessionStorage.getItem('poll_created');
       const signup = sessionStorage.getItem('signup_success');
       const login = sessionStorage.getItem('login_success');
+      const withdrawal = sessionStorage.getItem('withdrawal_success');
 
       if (created === '1') {
         setMessage('🎉 투표가 개설되었습니다!');
@@ -27,9 +28,12 @@ function SessionToast() {
       } else if (login === '1') {
         setMessage('👋 로그인에 성공했습니다!');
         sessionStorage.removeItem('login_success');
+      } else if (withdrawal === '1') {
+        setMessage('👋 탈퇴 처리가 완료되었습니다. 이용해주셔서 감사합니다.');
+        sessionStorage.removeItem('withdrawal_success');
       }
 
-      if (created === '1' || signup === '1' || login === '1') {
+      if (created === '1' || signup === '1' || login === '1' || withdrawal === '1') {
         const t = setTimeout(() => setMessage(null), 4000);
         return () => clearTimeout(t);
       }
