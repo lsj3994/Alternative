@@ -149,18 +149,22 @@ function EditPollContent() {
   };
 
   // 파일 업로드 핸들러
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, optionId: string) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, optionId: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하만 가능합니다.');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 10MB 이하만 가능합니다.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      updateOption(optionId, 'imageUrl', ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    
+    try {
+      const { compressImage } = await import('@/lib/imageUtils');
+      const compressedUrl = await compressImage(file, 800, 800, 0.7);
+      updateOption(optionId, 'imageUrl', compressedUrl);
+    } catch (error) {
+      console.error('이미지 압축 실패:', error);
+      alert('이미지 처리 중 오류가 발생했습니다.');
+    }
   };
 
   // 제출
