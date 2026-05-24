@@ -4,6 +4,8 @@ import { Comment } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import { ThumbsUp, ThumbsDown, Crown } from 'lucide-react';
 
+import { getCurrentUserId } from '@/lib/store';
+
 interface CommentItemProps {
   comment: Comment;
   onLike: (id: string) => void;
@@ -24,53 +26,64 @@ function timeAgo(dateString: string): string {
 
 export default function CommentItem({ comment, onLike, onDislike, index = 0 }: CommentItemProps) {
   const netScore = comment.likes - comment.dislikes;
+  const currentUserId = getCurrentUserId();
+  const isMine = comment.userId === currentUserId;
 
   return (
     <div
-      className={`glass-card rounded-xl p-4 animate-fade-in ${
-        comment.isBest ? 'ring-1 ring-accent/30' : ''
-      }`}
+      className={`flex w-full mb-4 animate-fade-in ${isMine ? 'justify-end' : 'justify-start'}`}
       style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
     >
-      {/* Best Badge */}
-      {comment.isBest && (
-        <div className="flex items-center gap-1 text-xs font-semibold text-accent mb-2">
-          <Crown size={13} />
-          베스트 댓글
+      <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+        
+        {/* Name and badge */}
+        <div className={`flex items-center gap-2 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+          <span className="font-bold text-xs text-text-muted">{comment.nickname}</span>
+          <Badge label={comment.optionLabel} />
         </div>
-      )}
 
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="font-bold text-sm text-text-primary">{comment.nickname}</span>
-        <Badge label={comment.optionLabel} />
-        <span className="text-xs text-text-muted ml-auto">{timeAgo(comment.createdAt)}</span>
-      </div>
-
-      {/* Content */}
-      <p className="text-sm text-text-secondary leading-relaxed mb-3">
-        {comment.content}
-      </p>
-
-      {/* Actions */}
-      <div className="flex items-center gap-4 text-xs text-text-muted">
-        <button
-          onClick={() => onLike(comment.id)}
-          className="flex items-center gap-1 hover:text-primary transition-colors group"
+        {/* Bubble */}
+        <div 
+          className={`relative px-4 py-3 shadow-sm ${
+            isMine 
+              ? 'bg-primary text-white rounded-2xl rounded-tr-sm' 
+              : 'bg-surface border border-border text-text-primary rounded-2xl rounded-tl-sm'
+          } ${comment.isBest && !isMine ? 'ring-2 ring-accent/50' : ''}`}
         >
-          <ThumbsUp size={14} className="group-hover:animate-bounce-sm" />
-          <span>{comment.likes}</span>
-        </button>
-        <button
-          onClick={() => onDislike(comment.id)}
-          className="flex items-center gap-1 hover:text-danger transition-colors"
-        >
-          <ThumbsDown size={14} />
-          <span>{comment.dislikes}</span>
-        </button>
-        <span className={`ml-auto font-semibold ${netScore > 0 ? 'text-primary' : netScore < 0 ? 'text-danger' : ''}`}>
-          {netScore > 0 ? '+' : ''}{netScore}
-        </span>
+          {comment.isBest && (
+            <div className={`flex items-center gap-1 text-[10px] font-bold mb-1 ${isMine ? 'text-white/80' : 'text-accent'}`}>
+              <Crown size={12} />
+              베스트 댓글
+            </div>
+          )}
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+        </div>
+
+        {/* Footer */}
+        <div className={`flex items-center gap-3 mt-1.5 px-1 text-[11px] text-text-muted ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+          <span>{timeAgo(comment.createdAt)}</span>
+          
+          <div className={`flex items-center gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+            <button
+              onClick={() => onLike(comment.id)}
+              className="flex items-center gap-1 hover:text-primary transition-colors group"
+            >
+              <ThumbsUp size={12} className="group-hover:animate-bounce-sm" />
+              <span>{comment.likes}</span>
+            </button>
+            <button
+              onClick={() => onDislike(comment.id)}
+              className="flex items-center gap-1 hover:text-danger transition-colors"
+            >
+              <ThumbsDown size={12} />
+              <span>{comment.dislikes}</span>
+            </button>
+            <span className={`font-semibold ${netScore > 0 ? 'text-primary' : netScore < 0 ? 'text-danger' : ''}`}>
+              {netScore > 0 ? '+' : ''}{netScore !== 0 ? netScore : ''}
+            </span>
+          </div>
+        </div>
+
       </div>
     </div>
   );

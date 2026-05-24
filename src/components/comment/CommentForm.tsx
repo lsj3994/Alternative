@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { Comment, PollOption } from '@/lib/types';
-import { getNickname, saveNickname, saveComment } from '@/lib/store';
+import { getNickname, saveNickname, saveComment, isLoggedIn, getUser } from '@/lib/store';
 import { Send } from 'lucide-react';
+import Link from 'next/link';
 
 interface CommentFormProps {
   pollId: string;
@@ -13,9 +14,21 @@ interface CommentFormProps {
 }
 
 export default function CommentForm({ pollId, options, votedOptionId, onSubmit }: CommentFormProps) {
-  const [nickname, setNickname] = useState(getNickname());
+  const user = getUser();
+  const [nickname, setNickname] = useState(user?.nickname || getNickname());
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isLoggedIn()) {
+    return (
+      <div className="glass-card rounded-2xl p-6 text-center text-text-muted mt-4">
+        <p className="mb-3 text-sm font-medium">토론장에 참여하려면 로그인이 필요합니다.</p>
+        <Link href="/login" className="btn btn-primary px-6 py-2 text-sm font-bold rounded-xl inline-block">
+          로그인하러 가기
+        </Link>
+      </div>
+    );
+  }
 
   const votedOption = options.find((o) => o.id === votedOptionId);
 
@@ -29,7 +42,7 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
     const comment: Comment = {
       id: `cmt-${Date.now()}`,
       pollId,
-      userId: 'local-user',
+      userId: user?.id || 'unknown',
       nickname: nickname.trim(),
       optionId: votedOptionId,
       optionLabel: votedOption?.label || '',

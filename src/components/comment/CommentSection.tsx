@@ -55,14 +55,23 @@ export default function CommentSection({
   // 정렬
   filtered = [...filtered].sort((a, b) => {
     if (sortMode === 'latest')
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // ascending (oldest first)
     if (sortMode === 'likes') return b.likes - a.likes;
     // best: likes - dislikes
     return b.likes - b.dislikes - (a.likes - a.dislikes);
   });
 
+  let visibleComments = filtered;
+  if (filtered.length > visibleCount) {
+    if (sortMode === 'latest') {
+      visibleComments = filtered.slice(-visibleCount);
+    } else {
+      visibleComments = filtered.slice(0, visibleCount);
+    }
+  }
+
   return (
-    <div className="mt-10">
+    <div className="mt-10 flex flex-col">
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-6">
         <MessageSquare size={22} className="text-primary" />
@@ -71,18 +80,8 @@ export default function CommentSection({
         </h2>
       </div>
 
-      {/* Comment Form */}
-      {votedOptionId && (
-        <CommentForm
-          pollId={pollId}
-          options={options}
-          votedOptionId={votedOptionId}
-          onSubmit={handleAddComment}
-        />
-      )}
-
       {/* Filters & Sort */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 mt-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {/* Faction Filter */}
         <button
           onClick={() => setFilterOptionId(null)}
@@ -122,13 +121,23 @@ export default function CommentSection({
           className={`flex items-center gap-1 pill ${sortMode === 'latest' ? 'active' : ''}`}
         >
           <Clock size={12} />
-          최신순
+          시간순
         </button>
       </div>
 
+      {/* "이전 댓글 더보기" for latest mode */}
+      {filtered.length > visibleCount && sortMode === 'latest' && (
+        <button
+          onClick={() => setVisibleCount((prev) => prev + 20)}
+          className="btn w-full mb-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium text-sm"
+        >
+          이전 대화 더보기 ({filtered.length - visibleCount}개 남음)
+        </button>
+      )}
+
       {/* Comments List */}
-      <div className="space-y-3">
-        {filtered.slice(0, visibleCount).map((comment, i) => (
+      <div className="space-y-3 flex flex-col mb-4">
+        {visibleComments.map((comment, i) => (
           <CommentItem
             key={comment.id}
             comment={comment}
@@ -137,23 +146,33 @@ export default function CommentSection({
             index={i}
           />
         ))}
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-text-muted">
+            <p className="text-3xl mb-3">💬</p>
+            <p>아직 대화가 없습니다. 첫 번째 의견을 남겨보세요!</p>
+          </div>
+        )}
       </div>
 
-      {filtered.length > visibleCount && (
+      {/* "더보기" for other modes */}
+      {filtered.length > visibleCount && sortMode !== 'latest' && (
         <button
           onClick={() => setVisibleCount((prev) => prev + 20)}
-          className="btn w-full mt-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium"
+          className="btn w-full mb-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium text-sm"
         >
           더보기 ({filtered.length - visibleCount}개 남음)
         </button>
       )}
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-text-muted">
-          <p className="text-3xl mb-3">💬</p>
-          <p>아직 댓글이 없습니다. 첫 번째 의견을 남겨보세요!</p>
-        </div>
-      )}
+      {/* Comment Form (At the bottom like a chat app) */}
+      <div className="sticky bottom-4 z-10">
+        <CommentForm
+          pollId={pollId}
+          options={options}
+          votedOptionId={votedOptionId || ''}
+          onSubmit={handleAddComment}
+        />
+      </div>
     </div>
   );
 }
