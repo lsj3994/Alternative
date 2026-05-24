@@ -26,6 +26,19 @@ export async function dbCreateUser(user: User): Promise<{ success: boolean; erro
   const client = getSupabaseClient();
   if (!client) return { success: false, error: 'Supabase 미연결' };
 
+  // 아이디 중복 체크
+  if (user.loginId) {
+    const { data: existingId } = await client
+      .from('users')
+      .select('id')
+      .eq('login_id', user.loginId)
+      .maybeSingle();
+
+    if (existingId) {
+      return { success: false, error: '이미 사용 중인 아이디입니다.' };
+    }
+  }
+
   // 닉네임 중복 체크
   const { data: existing } = await client
     .from('users')
@@ -44,6 +57,8 @@ export async function dbCreateUser(user: User): Promise<{ success: boolean; erro
     birth_year: user.birthYear,
     region: user.region,
     created_at: user.createdAt,
+    login_id: user.loginId || null,
+    password: user.password || null,
   });
 
   if (error) {
@@ -74,7 +89,58 @@ export async function dbGetUserById(id: string): Promise<User | null> {
     birthYear: data.birth_year,
     region: data.region,
     createdAt: data.created_at,
+    loginId: data.login_id || undefined,
+    password: data.password || undefined,
   };
+}
+
+/** 로그인 — Supabase에서 아이디/비번으로 유저 조회 */
+export async function dbLoginUser(loginId: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase 미연결' };
+
+  const { data, error } = await client
+    .from('users')
+    .select('*')
+    .eq('login_id', loginId)
+    .eq('password', password)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[Supabase] 로그인 조회 실패:', error.message);
+    return { success: false, error: error.message };
+  }
+
+  if (!data) {
+    return { success: false, error: '아이디 또는 비밀번호가 올바르지 않습니다.' };
+  }
+
+  const user: User = {
+    id: data.id,
+    nickname: data.nickname,
+    gender: data.gender,
+    birthYear: data.birth_year,
+    region: data.region,
+    createdAt: data.created_at,
+    loginId: data.login_id || undefined,
+    password: data.password || undefined,
+  };
+
+  return { success: true, user };
+}
+
+/** 아이디 중복 검사 */
+export async function dbCheckLoginIdDuplicate(loginId: string): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  const { data } = await client
+    .from('users')
+    .select('id')
+    .eq('login_id', loginId)
+    .maybeSingle();
+
+  return !!data;
 }
 
 // ============================================================

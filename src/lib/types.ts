@@ -9,6 +9,8 @@ export interface User {
   birthYear: number;
   region: string;
   createdAt: string;
+  loginId?: string;
+  password?: string;
 }
 
 export interface Demographics {

@@ -98,13 +98,22 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/signup"
-              className="ml-2 px-4 py-2 rounded-xl text-sm font-semibold text-primary bg-primary-light hover:bg-primary hover:text-white transition-all"
-              id="nav-signup"
-            >
-              가입하기
-            </Link>
+            <div className="flex items-center gap-2 ml-2">
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-text-secondary hover:text-primary transition-all"
+                id="nav-login"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/signup"
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-primary bg-primary-light hover:bg-primary hover:text-white transition-all"
+                id="nav-signup"
+              >
+                가입하기
+              </Link>
+            </div>
           )}
 
           <button
@@ -172,14 +181,23 @@ export default function Header() {
               투표 개설
             </Link>
             {!nickname ? (
-              <Link
-                href="/signup"
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-primary bg-primary-light hover:bg-primary hover:text-white transition-all"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <User size={16} />
-                가입하기
-              </Link>
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-text-secondary bg-surface-hover hover:bg-surface-active transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  로그인
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-primary bg-primary-light hover:bg-primary hover:text-white transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User size={16} />
+                  가입하기
+                </Link>
+              </div>
             ) : (
               <button
                 onClick={() => {

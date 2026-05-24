@@ -9,6 +9,8 @@ import { REGIONS } from '@/lib/data';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [loginId, setLoginId] = useState('');
+  const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   const [gender, setGender] = useState<'male' | 'female' | 'other' | ''>('');
   const [birthYear, setBirthYear] = useState('');
@@ -28,12 +30,23 @@ export default function SignupPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    
+    if (!loginId.trim()) newErrors.loginId = '아이디를 입력해주세요';
+    else if (!/^[a-zA-Z0-9]{4,15}$/.test(loginId.trim())) {
+      newErrors.loginId = '4~15자의 영문 대소문자, 숫자만 가능합니다';
+    }
+
+    if (!password) newErrors.password = '비밀번호를 입력해주세요';
+    else if (password.length < 4) newErrors.password = '비밀번호는 4자 이상이어야 합니다';
+
     if (!nickname.trim()) newErrors.nickname = '닉네임을 입력해주세요';
     else if (nickname.trim().length < 2) newErrors.nickname = '2자 이상 입력해주세요';
     else if (nickname.trim().length > 12) newErrors.nickname = '12자 이하로 입력해주세요';
+    
     if (!gender) newErrors.gender = '성별을 선택해주세요';
     if (!birthYear) newErrors.birthYear = '태어난 해를 선택해주세요';
     if (!region) newErrors.region = '지역을 선택해주세요';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -51,22 +64,30 @@ export default function SignupPage() {
       birthYear: parseInt(birthYear),
       region,
       createdAt: new Date().toISOString(),
+      loginId: loginId.trim(),
+      password,
     };
 
-    // Supabase 연결 가능하면 비동기로, 아니면 동기로
-    if (canUseSupabase()) {
-      const result = await saveUserAsync(user);
-      if (!result.success) {
+    const result = await saveUserAsync(user);
+    if (!result.success) {
+      if (result.error?.includes('아이디')) {
+        setErrors({ loginId: result.error });
+      } else {
         setErrors({ nickname: result.error || '가입에 실패했습니다.' });
-        setIsSubmitting(false);
-        return;
       }
-    } else {
-      saveUser(user);
+      setIsSubmitting(false);
+      return;
     }
 
     setIsSubmitting(false);
+    
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('signup_success', '1');
+    }
     router.push('/');
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   return (
@@ -85,6 +106,53 @@ export default function SignupPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* 아이디 */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
+              <UserIcon size={15} />
+              아이디
+            </label>
+            <input
+              type="text"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
+              placeholder="4~15자 영문, 숫자"
+              maxLength={15}
+              className={`w-full px-4 py-3.5 rounded-2xl bg-surface border text-text-primary placeholder-text-muted text-base font-medium focus:outline-none focus:ring-2 transition-all ${
+                errors.loginId
+                  ? 'border-danger focus:ring-danger/20'
+                  : 'border-border focus:border-primary focus:ring-primary/20'
+              }`}
+              id="signup-loginid"
+            />
+            {errors.loginId && (
+              <p className="text-xs text-danger mt-1.5 ml-1">{errors.loginId}</p>
+            )}
+          </div>
+
+          {/* 비밀번호 */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
+              <span className="text-sm">🔑</span>
+              비밀번호
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="4자 이상 비밀번호"
+              className={`w-full px-4 py-3.5 rounded-2xl bg-surface border text-text-primary placeholder-text-muted text-base font-medium focus:outline-none focus:ring-2 transition-all ${
+                errors.password
+                  ? 'border-danger focus:ring-danger/20'
+                  : 'border-border focus:border-primary focus:ring-primary/20'
+              }`}
+              id="signup-password"
+            />
+            {errors.password && (
+              <p className="text-xs text-danger mt-1.5 ml-1">{errors.password}</p>
+            )}
+          </div>
+
           {/* 닉네임 */}
           <div>
             <label className="flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">

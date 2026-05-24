@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
   gender TEXT NOT NULL CHECK (gender IN ('male', 'female', 'other')),
   birth_year INTEGER NOT NULL,
   region TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  login_id TEXT UNIQUE,
+  password TEXT
 );
 
 -- 2. polls 테이블

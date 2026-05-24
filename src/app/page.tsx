@@ -9,26 +9,38 @@ import { Poll } from '@/lib/types';
 
 type SortMode = 'popular' | 'latest' | 'active';
 
-function CreatedToast() {
-  const [show, setShow] = useState(false);
+function SessionToast() {
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const created = sessionStorage.getItem('poll_created');
+      const signup = sessionStorage.getItem('signup_success');
+      const login = sessionStorage.getItem('login_success');
+
       if (created === '1') {
-        setShow(true);
+        setMessage('🎉 투표가 개설되었습니다!');
         sessionStorage.removeItem('poll_created');
-        const t = setTimeout(() => setShow(false), 4000);
+      } else if (signup === '1') {
+        setMessage('🎉 회원가입이 완료되었습니다!');
+        sessionStorage.removeItem('signup_success');
+      } else if (login === '1') {
+        setMessage('👋 로그인에 성공했습니다!');
+        sessionStorage.removeItem('login_success');
+      }
+
+      if (created === '1' || signup === '1' || login === '1') {
+        const t = setTimeout(() => setMessage(null), 4000);
         return () => clearTimeout(t);
       }
     }
   }, []);
 
-  if (!show) return null;
+  if (!message) return null;
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl bg-green-500 text-white font-bold shadow-xl flex items-center gap-2 animate-fade-in-up">
-      🎉 투표가 개설되었습니다!
+      {message}
     </div>
   );
 }
@@ -75,8 +87,8 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* 투표 개설 성공 토스트 */}
-      <CreatedToast />
+      {/* 세션 알림 토스트 */}
+      <SessionToast />
 
       {/* Hero Section */}
       <section className="text-center mb-12 animate-fade-in">

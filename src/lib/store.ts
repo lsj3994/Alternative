@@ -24,7 +24,26 @@ const KEYS = {
   NICKNAME: 'bangtoron_nickname',
   USER_POLLS: 'bangtoron_user_polls',
   GUEST_ID: 'bangtoron_guest_id',
+  LOCAL_USERS: 'bangtoron_local_users',
 } as const;
+
+export function getLocalUsers(): User[] {
+  const raw = getItem(KEYS.LOCAL_USERS);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as User[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalUser(user: User): void {
+  const users = getLocalUsers();
+  if (!users.some(u => u.id === user.id || (u.loginId && u.loginId === user.loginId))) {
+    users.push(user);
+    setItem(KEYS.LOCAL_USERS, JSON.stringify(users));
+  }
+}
 
 // ---- 안전한 localStorage 접근 ----
 function getItem(key: string): string | null {
@@ -259,9 +278,27 @@ export function getNickname(): string {
 export async function saveUserAsync(user: User): Promise<{ success: boolean; error?: string }> {
   // Supabase에 저장 시도
   if (canUseSupabase()) {
+    const { dbCheckLoginIdDuplicate, dbCreateUser } = await import('./supabase-db');
+    if (user.loginId) {
+      const isDup = await dbCheckLoginIdDuplicate(user.loginId);
+      if (isDup) {
+        return { success: false, error: '이미 사용 중인 아이디입니다.' };
+      }
+    }
     const result = await dbCreateUser(user);
     if (!result.success) {
       return result; // 닉네임 중복 등의 에러
+    }
+  } else {
+    // 로컬 폴백 중복 체크
+    if (user.loginId) {
+      const localUsers = getLocalUsers();
+      if (localUsers.some((u) => u.loginId === user.loginId)) {
+        return { success: false, error: '이미 사용 중인 아이디입니다.' };
+      }
+      if (localUsers.some((u) => u.nickname === user.nickname)) {
+        return { success: false, error: '이미 사용 중인 닉네임입니다.' };
+      }
     }
   }
 
@@ -284,6 +321,35 @@ export function saveUserLocal(user: User): void {
   else if (age < 60) ageGroup = '50s';
   else ageGroup = '60s+';
   saveDemographics({ gender: user.gender, ageGroup, region: user.region });
+
+  // 전체 로컬 가입 유저 목록에도 캐시
+  saveLocalUser(user);
+}
+
+/** 로그인 기능 (Supabase 우선 -> 로컬 폴백) */
+export async function loginAsync(loginId: string, password: string): Promise<{ success: boolean; error?: string }> {
+  if (canUseSupabase()) {
+    try {
+      const { dbLoginUser } = await import('./supabase-db');
+      const res = await dbLoginUser(loginId, password);
+      if (res.success && res.user) {
+        saveUserLocal(res.user);
+        return { success: true };
+      }
+      return { success: false, error: res.error || '로그인 실패' };
+    } catch (err) {
+      console.warn('[Supabase] 로그인 에러, 로컬 폴백 시도:', err);
+    }
+  }
+
+  // 로컬스토리지 폴백 로그인
+  const localUsers = getLocalUsers();
+  const found = localUsers.find((u) => u.loginId === loginId && u.password === password);
+  if (found) {
+    saveUserLocal(found);
+    return { success: true };
+  }
+  return { success: false, error: '아이디 또는 비밀번호가 올바르지 않습니다.' };
 }
 
 /** @deprecated 동기 버전 — saveUserAsync 사용 권장 */
