@@ -147,8 +147,8 @@ export default function CreatePollPage() {
       totalVotes: 0,
       createdAt: new Date().toISOString(),
       createdBy: user?.id,
-      options: validOptions.map(opt => ({
-        id: opt.id,
+      options: validOptions.map((opt, index) => ({
+        id: `${pollId}-opt-${index + 1}`,
         pollId: pollId,
         label: opt.label.trim(),
         imageUrl: opt.imageUrl,
