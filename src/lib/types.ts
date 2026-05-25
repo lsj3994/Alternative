@@ -64,6 +64,7 @@ export interface Comment {
   dislikes: number;
   createdAt: string;
   isBest?: boolean;
+  parentId?: string;
 }
 
 // 통계 데이터 타입

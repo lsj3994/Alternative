@@ -591,6 +591,7 @@ export async function dbFetchComments(pollId: string): Promise<Comment[]> {
     dislikes: c.dislikes || 0,
     createdAt: c.created_at,
     isBest: c.is_best || false,
+    parentId: c.parent_id || undefined,
   }));
 }
 
@@ -611,6 +612,7 @@ export async function dbCreateComment(comment: Comment): Promise<{ success: bool
     dislikes: 0,
     is_best: false,
     created_at: comment.createdAt,
+    parent_id: comment.parentId || null,
   });
 
   if (error) {

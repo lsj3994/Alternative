@@ -26,9 +26,11 @@ export default function CommentSection({
   const [sortMode, setSortMode] = useState<SortMode>('best');
   const [filterOptionId, setFilterOptionId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
   const handleAddComment = (comment: Comment) => {
     setComments((prev) => [comment, ...prev]);
+    setReplyTo(null);
   };
 
   const handleLike = (commentId: string) => {
@@ -52,8 +54,12 @@ export default function CommentSection({
     ? comments.filter((c) => c.optionId === filterOptionId)
     : comments;
 
-  // 정렬
-  filtered = [...filtered].sort((a, b) => {
+  // 부모 댓글만 필터링
+  const rootComments = filtered.filter((c) => !c.parentId);
+  const childComments = filtered.filter((c) => c.parentId);
+
+  // 정렬 (부모 댓글 기준)
+  let sortedRoot = [...rootComments].sort((a, b) => {
     if (sortMode === 'latest')
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // ascending (oldest first)
     if (sortMode === 'likes') return b.likes - a.likes;
@@ -61,14 +67,18 @@ export default function CommentSection({
     return b.likes - b.dislikes - (a.likes - a.dislikes);
   });
 
-  let visibleComments = filtered;
-  if (filtered.length > visibleCount) {
+  let visibleRoot = sortedRoot;
+  if (sortedRoot.length > visibleCount) {
     if (sortMode === 'latest') {
-      visibleComments = filtered.slice(-visibleCount);
+      visibleRoot = sortedRoot.slice(-visibleCount);
     } else {
-      visibleComments = filtered.slice(0, visibleCount);
+      visibleRoot = sortedRoot.slice(0, visibleCount);
     }
   }
+
+  const getAlign = (optionId: string) => {
+    return options[0]?.id === optionId ? 'left' : 'right';
+  };
 
   return (
     <div className="mt-10 flex flex-col">
@@ -126,27 +136,47 @@ export default function CommentSection({
       </div>
 
       {/* "이전 댓글 더보기" for latest mode */}
-      {filtered.length > visibleCount && sortMode === 'latest' && (
+      {sortedRoot.length > visibleCount && sortMode === 'latest' && (
         <button
           onClick={() => setVisibleCount((prev) => prev + 20)}
           className="btn w-full mb-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium text-sm"
         >
-          이전 대화 더보기 ({filtered.length - visibleCount}개 남음)
+          이전 대화 더보기 ({sortedRoot.length - visibleCount}개 남음)
         </button>
       )}
 
       {/* Comments List */}
       <div className="space-y-3 flex flex-col mb-4">
-        {visibleComments.map((comment, i) => (
-          <CommentItem
-            key={comment.id}
-            comment={comment}
-            onLike={handleLike}
-            onDislike={handleDislike}
-            index={i}
-          />
-        ))}
-        {filtered.length === 0 && (
+        {visibleRoot.map((comment, i) => {
+          const replies = childComments
+            .filter((c) => c.parentId === comment.id)
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+          return (
+            <div key={comment.id} className="flex flex-col">
+              <CommentItem
+                comment={comment}
+                align={getAlign(comment.optionId)}
+                onLike={handleLike}
+                onDislike={handleDislike}
+                onReply={(c) => setReplyTo(c)}
+                index={i}
+              />
+              {replies.map((reply, j) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  align={getAlign(reply.optionId)}
+                  isReply
+                  onLike={handleLike}
+                  onDislike={handleDislike}
+                  index={i + 0.1 * (j + 1)}
+                />
+              ))}
+            </div>
+          );
+        })}
+        {sortedRoot.length === 0 && (
           <div className="text-center py-12 text-text-muted">
             <p className="text-3xl mb-3">💬</p>
             <p>아직 대화가 없습니다. 첫 번째 의견을 남겨보세요!</p>
@@ -155,12 +185,12 @@ export default function CommentSection({
       </div>
 
       {/* "더보기" for other modes */}
-      {filtered.length > visibleCount && sortMode !== 'latest' && (
+      {sortedRoot.length > visibleCount && sortMode !== 'latest' && (
         <button
           onClick={() => setVisibleCount((prev) => prev + 20)}
           className="btn w-full mb-4 bg-surface-hover hover:bg-surface-active text-text-primary rounded-2xl py-3 border border-border transition-colors font-medium text-sm"
         >
-          더보기 ({filtered.length - visibleCount}개 남음)
+          더보기 ({sortedRoot.length - visibleCount}개 남음)
         </button>
       )}
 
@@ -170,6 +200,8 @@ export default function CommentSection({
           pollId={pollId}
           options={options}
           votedOptionId={votedOptionId || ''}
+          replyToComment={replyTo}
+          onCancelReply={() => setReplyTo(null)}
           onSubmit={handleAddComment}
         />
       </div>

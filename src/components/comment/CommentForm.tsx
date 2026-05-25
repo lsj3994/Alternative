@@ -10,10 +10,12 @@ interface CommentFormProps {
   pollId: string;
   options: PollOption[];
   votedOptionId: string;
+  replyToComment?: Comment | null;
+  onCancelReply?: () => void;
   onSubmit: (comment: Comment) => void;
 }
 
-export default function CommentForm({ pollId, options, votedOptionId, onSubmit }: CommentFormProps) {
+export default function CommentForm({ pollId, options, votedOptionId, replyToComment, onCancelReply, onSubmit }: CommentFormProps) {
   const user = getUser();
   const [nickname, setNickname] = useState(user?.nickname || getNickname());
   const [content, setContent] = useState('');
@@ -57,6 +59,7 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
       likes: 0,
       dislikes: 0,
       createdAt: new Date().toISOString(),
+      parentId: replyToComment?.id,
     };
 
     saveComment(comment);
@@ -67,6 +70,15 @@ export default function CommentForm({ pollId, options, votedOptionId, onSubmit }
 
   return (
     <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4">
+      {replyToComment && (
+        <div className="flex items-center justify-between bg-surface/50 p-2 rounded-lg mb-3 border border-border">
+          <span className="text-xs text-text-secondary truncate">
+            <strong className="text-primary">{replyToComment.nickname}</strong>님에게 답글 작성 중...
+          </span>
+          <button type="button" onClick={onCancelReply} className="text-xs text-text-muted hover:text-danger">취소</button>
+        </div>
+      )}
+      
       <div className="mb-3">
         <span className="block text-sm text-text-muted mb-2 font-medium">어느 진영으로 의견을 남기시겠어요?</span>
         <div className="flex flex-wrap gap-2">

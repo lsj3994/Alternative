@@ -214,7 +214,7 @@ export const REGIONS = [
   '전북', '전남', '경북', '경남', '제주',
 ];
 
-import { getUserPolls } from './store';
+import { getUserPolls, getComments } from './store';
 import { canUseSupabase, dbFetchPolls, dbFetchPollById, dbFetchComments, dbGetPollStats, dbUpdatePoll, dbDeletePoll } from './supabase-db';
 
 // ---- Poll ID로 검색 (동기 — 로컬/더미 폴백) ----
@@ -230,7 +230,18 @@ export function getPollStats(pollId: string): PollStats | undefined {
 
 // ---- Poll 댓글 (동기 — 더미 폴백) ----
 export function getPollComments(pollId: string): Comment[] {
-  return DUMMY_COMMENTS[pollId] || [];
+  const localComments = getComments(pollId);
+  const dummyComments = DUMMY_COMMENTS[pollId] || [];
+  
+  // 합치기 (ID 중복 제거)
+  const allComments = [...localComments];
+  dummyComments.forEach(dc => {
+    if (!allComments.find(c => c.id === dc.id)) {
+      allComments.push(dc);
+    }
+  });
+  
+  return allComments;
 }
 
 // ============================================================
