@@ -207,7 +207,8 @@ export async function dbFetchPolls(): Promise<Poll[]> {
       const { data: rawOptions } = await client
         .from('poll_options')
         .select('*')
-        .eq('poll_id', poll.id);
+        .eq('poll_id', poll.id)
+        .order('id', { ascending: true });
 
       if (rawOptions) {
         options = await Promise.all(
@@ -289,7 +290,8 @@ export async function dbFetchPollById(id: string): Promise<Poll | null> {
     const { data: optionCounts, error: viewError } = await client
       .from('poll_option_counts')
       .select('*')
-      .eq('poll_id', id);
+      .eq('poll_id', id)
+      .order('id', { ascending: true });
 
     if (!viewError && optionCounts && optionCounts.length > 0) {
       options = optionCounts.map((oc) => ({
@@ -308,7 +310,8 @@ export async function dbFetchPollById(id: string): Promise<Poll | null> {
     const { data: rawOptions } = await client
       .from('poll_options')
       .select('*')
-      .eq('poll_id', id);
+      .eq('poll_id', id)
+      .order('id', { ascending: true });
 
     if (rawOptions) {
       options = await Promise.all(
