@@ -35,13 +35,14 @@ export default function CommentItem({ comment, align = 'left', isReply = false, 
 
   return (
     <div
-      className={`flex w-full mb-4 animate-fade-in ${isRight ? 'justify-end' : 'justify-start'} ${isReply ? 'pl-8 sm:pl-12' : ''}`}
+      className={`flex w-full mb-4 animate-fade-in ${isRight ? 'justify-end' : 'justify-start'} ${isReply ? (isRight ? 'pr-8 sm:pr-12' : 'pl-8 sm:pl-12') : ''}`}
       style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
     >
       <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isRight ? 'items-end' : 'items-start'}`}>
         
         {/* Name and badge */}
         <div className={`flex items-center gap-2 mb-1 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+          {isReply && <span className="text-text-muted text-xs">↳</span>}
           <span className={`font-bold text-xs ${isMine ? 'text-primary' : 'text-text-muted'}`}>{comment.nickname}</span>
           <Badge label={comment.optionLabel} />
         </div>

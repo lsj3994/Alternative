@@ -61,7 +61,7 @@ export default function CommentSection({
   // 정렬 (부모 댓글 기준)
   let sortedRoot = [...rootComments].sort((a, b) => {
     if (sortMode === 'latest')
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // ascending (oldest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // descending (newest first)
     if (sortMode === 'likes') return b.likes - a.likes;
     // best: likes - dislikes
     return b.likes - b.dislikes - (a.likes - a.dislikes);
@@ -69,11 +69,7 @@ export default function CommentSection({
 
   let visibleRoot = sortedRoot;
   if (sortedRoot.length > visibleCount) {
-    if (sortMode === 'latest') {
-      visibleRoot = sortedRoot.slice(-visibleCount);
-    } else {
-      visibleRoot = sortedRoot.slice(0, visibleCount);
-    }
+    visibleRoot = sortedRoot.slice(0, visibleCount);
   }
 
   const getAlign = (optionId: string) => {
