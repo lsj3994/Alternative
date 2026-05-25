@@ -140,18 +140,35 @@ export default function CreatePollPage() {
     const user = getUser();
     const pollId = `poll-${Date.now()}`;
     
+    // Automatically generate missing images
+    const optionsWithImages = await Promise.all(
+      validOptions.map(async (opt) => {
+        if (opt.imageUrl) return opt;
+        try {
+          const prompt = title.trim()
+            ? `${title} 투표에서 "${opt.label.trim()}" 를 상징하는 이미지`
+            : `"${opt.label.trim()}"를 잘 표현하는 이미지`;
+          const url = await generateAIImage(prompt, opt.label.trim());
+          return { ...opt, imageUrl: url };
+        } catch (err) {
+          console.error('Failed to auto-generate image:', err);
+          return opt;
+        }
+      })
+    );
+    
     // 투표 객체 생성
     const newPoll = {
       id: pollId,
       title: title.trim(),
       description: description.trim(),
       status: 'active' as const,
-      thumbnailUrl: validOptions.find(o => o.imageUrl)?.imageUrl || undefined,
+      thumbnailUrl: optionsWithImages.find(o => o.imageUrl)?.imageUrl || undefined,
       category: category || '기타',
       totalVotes: 0,
       createdAt: new Date().toISOString(),
       createdBy: user?.id,
-      options: validOptions.map((opt, index) => ({
+      options: optionsWithImages.map((opt, index) => ({
         id: `${pollId}-opt-${index + 1}`,
         pollId: pollId,
         label: opt.label.trim(),
