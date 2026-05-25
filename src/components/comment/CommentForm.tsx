@@ -69,11 +69,11 @@ export default function CommentForm({ pollId, options, votedOptionId, replyToCom
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-4">
+    <form onSubmit={handleSubmit} className={`rounded-2xl p-4 ${replyToComment ? 'bg-surface-hover border-2 border-primary/40 shadow-md' : 'glass-card'}`}>
       {replyToComment && (
-        <div className="flex items-center justify-between bg-surface/50 p-2 rounded-lg mb-3 border border-border">
+        <div className="flex items-center justify-between bg-surface p-2 rounded-lg mb-3 border border-border">
           <span className="text-xs text-text-secondary truncate">
-            <strong className="text-primary">{replyToComment.nickname}</strong>님에게 답글 작성 중...
+            <strong className="text-primary">{replyToComment.nickname}</strong> 님에게 답글 작성 중...
           </span>
           <button type="button" onClick={onCancelReply} className="text-xs text-text-muted hover:text-danger">취소</button>
         </div>
@@ -111,10 +111,10 @@ export default function CommentForm({ pollId, options, votedOptionId, replyToCom
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="의견을 남겨보세요..."
+          placeholder={replyToComment ? "답글을 남겨보세요..." : "의견을 남겨보세요..."}
           maxLength={500}
           rows={2}
-          className="flex-1 px-4 py-3 rounded-xl bg-surface-hover border border-border text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-primary transition-colors"
+          className={`flex-1 px-4 py-3 rounded-xl border text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-primary transition-colors ${replyToComment ? 'bg-surface border-border/60' : 'bg-surface-hover border-border'}`}
           required
         />
         <button

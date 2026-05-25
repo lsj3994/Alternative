@@ -158,18 +158,32 @@ export default function CommentSection({
                 onReply={(c) => setReplyTo(c)}
                 index={i}
               />
-              {replies.map((reply, j) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  align={getAlign(reply.optionId)}
-                  isReply
-                  onLike={handleLike}
-                  onDislike={handleDislike}
-                  index={i + 0.1 * (j + 1)}
-                />
-              ))}
-            </div>
+                {replies.map((reply, j) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    align={getAlign(reply.optionId)}
+                    isReply
+                    onLike={handleLike}
+                    onDislike={handleDislike}
+                    index={i + 0.1 * (j + 1)}
+                  />
+                ))}
+                
+                {/* Inline Reply Form */}
+                {replyTo?.id === comment.id && (
+                  <div className="mt-1 mb-4 animate-fade-in pl-4 sm:pl-8 pr-4 sm:pr-8">
+                    <CommentForm
+                      pollId={pollId}
+                      options={options}
+                      votedOptionId={votedOptionId || ''}
+                      replyToComment={replyTo}
+                      onCancelReply={() => setReplyTo(null)}
+                      onSubmit={handleAddComment}
+                    />
+                  </div>
+                )}
+              </div>
           );
         })}
         {sortedRoot.length === 0 && (
@@ -190,17 +204,17 @@ export default function CommentSection({
         </button>
       )}
 
-      {/* Comment Form (At the bottom like a chat app) */}
-      <div className="sticky bottom-4 z-10">
-        <CommentForm
-          pollId={pollId}
-          options={options}
-          votedOptionId={votedOptionId || ''}
-          replyToComment={replyTo}
-          onCancelReply={() => setReplyTo(null)}
-          onSubmit={handleAddComment}
-        />
-      </div>
+      {/* Main Comment Form (At the bottom like a chat app) */}
+      {!replyTo && (
+        <div className="sticky bottom-4 z-10">
+          <CommentForm
+            pollId={pollId}
+            options={options}
+            votedOptionId={votedOptionId || ''}
+            onSubmit={handleAddComment}
+          />
+        </div>
+      )}
     </div>
   );
 }
