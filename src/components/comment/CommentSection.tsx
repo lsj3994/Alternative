@@ -78,14 +78,9 @@ export default function CommentSection({
 
   return (
     <div className="flex flex-col">
-      {/* Section Header */}
-      <div className="poll-section-header">
-        <div className="poll-section-icon poll-section-icon--comment">
-          <MessageSquare size={18} />
-        </div>
-        <h2 className="text-lg font-bold text-text-primary">
-          토론장 <span className="text-text-muted text-base font-normal">({comments.length})</span>
-        </h2>
+      {/* 댓글 수 표시 */}
+      <div className="flex items-center gap-2 mb-4 text-sm text-text-muted">
+        <span className="font-semibold text-text-primary">{comments.length}개</span>의 의견
       </div>
 
       {/* Filters & Sort */}

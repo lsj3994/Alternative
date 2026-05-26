@@ -234,7 +234,7 @@ function PollContent() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
       {/* Header Actions */}
       <div className="flex items-center justify-between">
         <button
@@ -269,71 +269,89 @@ function PollContent() {
       {/* ═══════════════════════════════════════════════════════
            SECTION 1: 투표 영역
          ═══════════════════════════════════════════════════════ */}
-      <section className="poll-section-card poll-section-vote animate-fade-in-up">
-        {/* Thumbnail */}
-        {poll.thumbnailUrl && (
-          <div className="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6">
-            <Image
-              src={poll.thumbnailUrl}
-              alt={poll.title}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          </div>
-        )}
+      <section className="section-block animate-fade-in-up">
+        <div className="section-banner section-banner--vote">
+          <span className="section-banner-icon">🗳️</span>
+          <span>투표</span>
+        </div>
+        <div className="section-body">
+          {/* Thumbnail */}
+          {poll.thumbnailUrl && (
+            <div className="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6">
+              <Image
+                src={poll.thumbnailUrl}
+                alt={poll.title}
+                fill
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            </div>
+          )}
 
-        <PollDetail
-          poll={poll}
-          onVote={handleVote}
-          onCancel={handleCancel}
-          onNeedSignup={() => alert('투표 기능은 모두 이용할 수 있습니다. (댓글 작성은 로그인 필요)')}
-        />
-
-        {/* Share and Stats toggle buttons */}
-        {votedOptionIds.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-border flex gap-2 justify-center">
-            <button
-              onClick={() => setShowStats((s) => !s)}
-              className="btn btn-secondary text-sm px-6"
-            >
-              <BarChart3 size={16} />
-              {showStats ? '통계 숨기기' : '통계 보기'}
-            </button>
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: poll.title, url: window.location.href });
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  alert('링크가 복사되었습니다!');
-                }
-              }}
-              className="btn btn-secondary text-sm px-6"
-            >
-              <Share2 size={16} />
-              공유
-            </button>
-          </div>
-        )}
+          <PollDetail
+            poll={poll}
+            onVote={handleVote}
+            onCancel={handleCancel}
+            onNeedSignup={() => alert('투표 기능은 모두 이용할 수 있습니다. (댓글 작성은 로그인 필요)')}
+          />
+        </div>
       </section>
+
+      {/* 공유 / 통계 토글 버튼 */}
+      {votedOptionIds.length > 0 && (
+        <div className="flex gap-3 justify-center animate-fade-in">
+          <button
+            onClick={() => setShowStats((s) => !s)}
+            className={`btn text-sm px-6 rounded-2xl font-semibold transition-all ${
+              showStats
+                ? 'bg-purple-500 text-white shadow-md hover:bg-purple-600'
+                : 'btn-secondary border border-border'
+            }`}
+          >
+            <BarChart3 size={16} />
+            {showStats ? '통계 숨기기' : '📊 통계 보기'}
+          </button>
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: poll.title, url: window.location.href });
+              } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('링크가 복사되었습니다!');
+              }
+            }}
+            className="btn btn-secondary text-sm px-6 rounded-2xl border border-border"
+          >
+            <Share2 size={16} />
+            공유
+          </button>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════
            SECTION 2: 통계 영역
          ═══════════════════════════════════════════════════════ */}
-      {showStats && stats && (
-        <section className="poll-section-card poll-section-stats animate-fade-in-up">
-          <div className="poll-section-header">
-            <div className="poll-section-icon poll-section-icon--stats">
-              <BarChart3 size={18} />
-            </div>
-            <h2 className="text-lg font-bold text-text-primary">통계 대시보드</h2>
+      {showStats && (
+        <section className="section-block animate-fade-in-up">
+          <div className="section-banner section-banner--stats">
+            <span className="section-banner-icon">📊</span>
+            <span>통계 대시보드</span>
           </div>
-          <div className="space-y-5">
-            <GenderPieChart stats={stats.gender} options={poll.options} />
-            <AgeBarChart stats={stats.age} options={poll.options} />
-            <RegionChart stats={stats.region} options={poll.options} />
+          <div className="section-body">
+            {stats ? (
+              <div className="space-y-5">
+                <GenderPieChart stats={stats.gender} options={poll.options} />
+                <AgeBarChart stats={stats.age} options={poll.options} />
+                <RegionChart stats={stats.region} options={poll.options} />
+              </div>
+            ) : (
+              <div className="text-center py-12 text-text-muted">
+                <p className="text-3xl mb-3">📊</p>
+                <p className="font-medium">아직 통계 데이터가 없습니다.</p>
+                <p className="text-sm mt-1">투표가 쌓이면 성별·연령·지역별 통계가 표시됩니다.</p>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -341,13 +359,19 @@ function PollContent() {
       {/* ═══════════════════════════════════════════════════════
            SECTION 3: 댓글(토론장) 영역
          ═══════════════════════════════════════════════════════ */}
-      <section className="poll-section-card poll-section-comment animate-fade-in-up">
-        <CommentSection
-          pollId={poll.id}
-          options={poll.options}
-          initialComments={comments}
-          votedOptionId={votedOptionIds[0] || null}
-        />
+      <section className="section-block animate-fade-in-up">
+        <div className="section-banner section-banner--comment">
+          <span className="section-banner-icon">💬</span>
+          <span>토론장</span>
+        </div>
+        <div className="section-body">
+          <CommentSection
+            pollId={poll.id}
+            options={poll.options}
+            initialComments={comments}
+            votedOptionId={votedOptionIds[0] || null}
+          />
+        </div>
       </section>
     </div>
   );

@@ -412,70 +412,66 @@ body {
 }
 
 /* ============================================================
-   Poll Detail Page — Section Cards (영역 구분)
+   Poll Detail Page — Bold Section Blocks (영역 구분)
    ============================================================
-   투표 / 통계 / 댓글 영역을 시각적으로 명확히 분리
+   투표 / 통계 / 댓글 영역을 눈에 확 띄는 그라디언트 배너로 구분
    ============================================================ */
 
-.poll-section-card {
-  background: var(--bg-surface);
+.section-block {
   border-radius: var(--radius-xl);
-  padding: 24px;
-  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
-  border-left: 4px solid transparent;
-  position: relative;
 }
 
-.dark .poll-section-card {
-  box-shadow: var(--shadow-sm);
+.dark .section-block {
+  box-shadow: var(--shadow-md);
 }
 
-/* -- 투표 영역: 파란색 계열 강조 -- */
-.poll-section-vote {
-  border-left-color: var(--primary);
-}
-
-/* -- 통계 영역: 보라색 계열 강조 -- */
-.poll-section-stats {
-  border-left-color: #8B5CF6;
-}
-
-/* -- 댓글(토론장) 영역: 주황색 계열 강조 -- */
-.poll-section-comment {
-  border-left-color: var(--accent);
-}
-
-/* Section Header (통계 등 제목 바) */
-.poll-section-header {
+/* -- 그라디언트 배너 (상단 헤더) -- */
+.section-banner {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* Section Icon Badge */
-.poll-section-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
   color: white;
-  flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
-.poll-section-icon--vote {
-  background: var(--gradient-primary);
+.section-banner-icon {
+  font-size: 20px;
+  line-height: 1;
 }
 
-.poll-section-icon--stats {
-  background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+/* 투표: 블루 그라디언트 */
+.section-banner--vote {
+  background: linear-gradient(135deg, #0064FF, #3182F6, #60A5FA);
 }
 
-.poll-section-icon--comment {
-  background: var(--gradient-accent);
+/* 통계: 보라 그라디언트 */
+.section-banner--stats {
+  background: linear-gradient(135deg, #7C3AED, #8B5CF6, #A78BFA);
 }
+
+/* 댓글: 주황 그라디언트 */
+.section-banner--comment {
+  background: linear-gradient(135deg, #EA580C, #F97316, #FB923C);
+}
+
+/* -- 섹션 본문 -- */
+.section-body {
+  background: var(--bg-surface);
+  padding: 24px;
+}
+
+.dark .section-body {
+  background: var(--bg-surface);
+}
+
+/* CommentSection 내부 헤더 — 배너가 이미 있으므로 숨김 */
+.section-body .poll-section-header {
+  display: none;
+}
+
