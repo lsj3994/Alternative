@@ -234,9 +234,9 @@ function PollContent() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {/* Header Actions */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <button
           onClick={() => router.push('/')}
           className="flex items-center gap-1 text-sm text-text-muted hover:text-text-primary transition-colors"
@@ -266,76 +266,89 @@ function PollContent() {
         )}
       </div>
 
-      {/* Thumbnail */}
-      {poll.thumbnailUrl && (
-        <div className="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6 animate-fade-in">
-          <Image
-            src={poll.thumbnailUrl}
-            alt={poll.title}
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        </div>
-      )}
+      {/* ═══════════════════════════════════════════════════════
+           SECTION 1: 투표 영역
+         ═══════════════════════════════════════════════════════ */}
+      <section className="poll-section-card poll-section-vote animate-fade-in-up">
+        {/* Thumbnail */}
+        {poll.thumbnailUrl && (
+          <div className="relative w-full h-48 md:h-64 rounded-2xl overflow-hidden mb-6">
+            <Image
+              src={poll.thumbnailUrl}
+              alt={poll.title}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        )}
 
-      <div className="mb-6">
         <PollDetail
           poll={poll}
           onVote={handleVote}
           onCancel={handleCancel}
           onNeedSignup={() => alert('투표 기능은 모두 이용할 수 있습니다. (댓글 작성은 로그인 필요)')}
         />
-      </div>
 
-      {/* Comments (Moved below PollDetail) */}
-      <CommentSection
-        pollId={poll.id}
-        options={poll.options}
-        initialComments={comments}
-        votedOptionId={votedOptionIds[0] || null}
-      />
+        {/* Share and Stats toggle buttons */}
+        {votedOptionIds.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-border flex gap-2 justify-center">
+            <button
+              onClick={() => setShowStats((s) => !s)}
+              className="btn btn-secondary text-sm px-6"
+            >
+              <BarChart3 size={16} />
+              {showStats ? '통계 숨기기' : '통계 보기'}
+            </button>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: poll.title, url: window.location.href });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert('링크가 복사되었습니다!');
+                }
+              }}
+              className="btn btn-secondary text-sm px-6"
+            >
+              <Share2 size={16} />
+              공유
+            </button>
+          </div>
+        )}
+      </section>
 
-      {/* Share and Stats toggle buttons */}
-      {votedOptionIds.length > 0 && (
-        <div className="mt-8 flex gap-2 justify-center">
-          <button
-            onClick={() => setShowStats((s) => !s)}
-            className="btn btn-secondary text-sm px-6"
-          >
-            <BarChart3 size={16} />
-            {showStats ? '통계 숨기기' : '통계 보기'}
-          </button>
-          <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: poll.title, url: window.location.href });
-              } else {
-                navigator.clipboard.writeText(window.location.href);
-                alert('링크가 복사되었습니다!');
-              }
-            }}
-            className="btn btn-secondary text-sm px-6"
-          >
-            <Share2 size={16} />
-            공유
-          </button>
-        </div>
-      )}
-
-      {/* Statistics Dashboard */}
+      {/* ═══════════════════════════════════════════════════════
+           SECTION 2: 통계 영역
+         ═══════════════════════════════════════════════════════ */}
       {showStats && stats && (
-        <div className="mt-8 space-y-5 animate-fade-in-up">
-          <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-            <BarChart3 size={22} className="text-primary" />
-            통계 대시보드
-          </h2>
-          <GenderPieChart stats={stats.gender} options={poll.options} />
-          <AgeBarChart stats={stats.age} options={poll.options} />
-          <RegionChart stats={stats.region} options={poll.options} />
-        </div>
+        <section className="poll-section-card poll-section-stats animate-fade-in-up">
+          <div className="poll-section-header">
+            <div className="poll-section-icon poll-section-icon--stats">
+              <BarChart3 size={18} />
+            </div>
+            <h2 className="text-lg font-bold text-text-primary">통계 대시보드</h2>
+          </div>
+          <div className="space-y-5">
+            <GenderPieChart stats={stats.gender} options={poll.options} />
+            <AgeBarChart stats={stats.age} options={poll.options} />
+            <RegionChart stats={stats.region} options={poll.options} />
+          </div>
+        </section>
       )}
+
+      {/* ═══════════════════════════════════════════════════════
+           SECTION 3: 댓글(토론장) 영역
+         ═══════════════════════════════════════════════════════ */}
+      <section className="poll-section-card poll-section-comment animate-fade-in-up">
+        <CommentSection
+          pollId={poll.id}
+          options={poll.options}
+          initialComments={comments}
+          votedOptionId={votedOptionIds[0] || null}
+        />
+      </section>
     </div>
   );
 }

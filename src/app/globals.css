@@ -410,3 +410,72 @@ body {
   background: rgba(240, 68, 82, 0.1);
   color: var(--danger);
 }
+
+/* ============================================================
+   Poll Detail Page — Section Cards (영역 구분)
+   ============================================================
+   투표 / 통계 / 댓글 영역을 시각적으로 명확히 분리
+   ============================================================ */
+
+.poll-section-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid transparent;
+  position: relative;
+}
+
+.dark .poll-section-card {
+  box-shadow: var(--shadow-sm);
+}
+
+/* -- 투표 영역: 파란색 계열 강조 -- */
+.poll-section-vote {
+  border-left-color: var(--primary);
+}
+
+/* -- 통계 영역: 보라색 계열 강조 -- */
+.poll-section-stats {
+  border-left-color: #8B5CF6;
+}
+
+/* -- 댓글(토론장) 영역: 주황색 계열 강조 -- */
+.poll-section-comment {
+  border-left-color: var(--accent);
+}
+
+/* Section Header (통계 등 제목 바) */
+.poll-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Section Icon Badge */
+.poll-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.poll-section-icon--vote {
+  background: var(--gradient-primary);
+}
+
+.poll-section-icon--stats {
+  background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+}
+
+.poll-section-icon--comment {
+  background: var(--gradient-accent);
+}
