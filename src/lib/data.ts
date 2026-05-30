@@ -279,14 +279,23 @@ export async function fetchPollById(id: string): Promise<Poll | undefined> {
   return getPollById(id);
 }
 
-/** 댓글 조회 (DB → 더미 폴백) */
+/** 댓글 조회 (DB 우선 + 로컬 병합) */
 export async function fetchPollComments(pollId: string): Promise<Comment[]> {
   if (canUseSupabase()) {
     try {
       const dbComments = await dbFetchComments(pollId);
-      if (dbComments.length > 0) return dbComments;
+      // 로컬스토리지의 댓글도 함께 병합 (DB 저장 전 or 실패한 댓글 포함)
+      // 투표 개설한 브라우저에서 쓴 댓글이 안 보이는 버그 방지
+      const localComments = getComments(pollId);
+      const merged = [...dbComments];
+      localComments.forEach((lc) => {
+        if (!merged.find((dc) => dc.id === lc.id)) {
+          merged.push(lc);
+        }
+      });
+      return merged;
     } catch (err) {
-      console.warn('[Supabase] Comments 조회 실패, 더미 데이터 사용:', err);
+      console.warn('[Supabase] Comments 조회 실패, 로컬 데이터 사용:', err);
     }
   }
   return getPollComments(pollId);
