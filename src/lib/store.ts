@@ -246,6 +246,30 @@ export function saveComment(comment: Comment): void {
   }
 }
 
+/** 댓글 저장 — DB 저장을 await하여 완료 보장 */
+export async function saveCommentAsync(comment: Comment): Promise<boolean> {
+  // 로컬스토리지에도 저장 (폴백)
+  const comments = getAllComments();
+  comments.push(comment);
+  setItem(KEYS.COMMENTS, JSON.stringify(comments));
+
+  // Supabase DB에 저장 (await)
+  if (canUseSupabase()) {
+    try {
+      const result = await dbCreateComment(comment);
+      if (!result.success) {
+        console.warn('[Supabase] Comment 저장 실패:', result.error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] Comment 저장 에러:', err);
+      return false;
+    }
+  }
+  return true;
+}
+
 export function getAllComments(): Comment[] {
   const raw = getItem(KEYS.COMMENTS);
   if (!raw) return [];

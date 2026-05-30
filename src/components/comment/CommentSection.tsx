@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Comment, PollOption } from '@/lib/types';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
 import { MessageSquare, TrendingUp, Clock, Crown } from 'lucide-react';
 import { likeCommentSync, dislikeCommentSync } from '@/lib/store';
+import { fetchPollComments } from '@/lib/data';
 
 interface CommentSectionProps {
   pollId: string;
@@ -28,9 +29,34 @@ export default function CommentSection({
   const [visibleCount, setVisibleCount] = useState(20);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
+  // DB에서 직접 댓글 로드
+  const refreshComments = useCallback(async () => {
+    try {
+      const fresh = await fetchPollComments(pollId);
+      setComments(fresh);
+    } catch (err) {
+      console.warn('댓글 로드 실패:', err);
+    }
+  }, [pollId]);
+
+  // 마운트 시 DB에서 최신 댓글 로드 (캐시 무시)
+  useEffect(() => {
+    refreshComments();
+  }, [refreshComments]);
+
   const handleAddComment = (comment: Comment) => {
-    setComments((prev) => [comment, ...prev]);
+    // 낙관적 업데이트: 즉시 UI에 표시
+    setComments((prev) => {
+      // 중복 방지
+      if (prev.some((c) => c.id === comment.id)) return prev;
+      return [comment, ...prev];
+    });
     setReplyTo(null);
+
+    // DB 저장 완료 후 재조회하여 완전 동기화
+    setTimeout(() => {
+      refreshComments();
+    }, 2000);
   };
 
   const handleLike = (commentId: string) => {

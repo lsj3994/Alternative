@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Comment, PollOption } from '@/lib/types';
-import { getNickname, saveNickname, saveComment, isLoggedIn, getUser } from '@/lib/store';
+import { getNickname, saveNickname, saveCommentAsync, isLoggedIn, getUser } from '@/lib/store';
 import { Send } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,7 +62,8 @@ export default function CommentForm({ pollId, options, votedOptionId, replyToCom
       parentId: replyToComment?.id,
     };
 
-    saveComment(comment);
+    // DB에 저장 완료를 기다린 후 UI 갱신
+    await saveCommentAsync(comment);
     onSubmit(comment);
     setContent('');
     setIsSubmitting(false);
