@@ -232,6 +232,17 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
+                    {option.imageUrl && (
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                        <Image
+                          src={option.imageUrl}
+                          alt={option.label}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    )}
                     {option.emoji && <span className="text-2xl">{option.emoji}</span>}
                     <span className="font-bold text-text-primary flex-1">
                       {option.label}

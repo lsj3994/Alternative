@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS comments (
   likes INTEGER DEFAULT 0,
   dislikes INTEGER DEFAULT 0,
   is_best BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  parent_id TEXT REFERENCES comments(id) ON DELETE CASCADE
 );
 
 -- ============================================================

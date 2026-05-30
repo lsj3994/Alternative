@@ -603,7 +603,26 @@ export async function dbCreateComment(comment: Comment): Promise<{ success: bool
   const client = getSupabaseClient();
   if (!client) return { success: false, error: 'Supabase 미연결' };
 
-  const { error } = await client.from('comments').insert({
+  // user_id FK 위반 방지: users 테이블에 해당 유저가 없으면 먼저 생성
+  const { data: existingUser } = await client
+    .from('users')
+    .select('id')
+    .eq('id', comment.userId)
+    .maybeSingle();
+
+  if (!existingUser) {
+    // 게스트 또는 로컬 유저 — DB에 등록
+    await client.from('users').insert({
+      id: comment.userId,
+      nickname: comment.nickname,
+      gender: 'other',
+      birth_year: 2000,
+      region: '미가입자',
+      created_at: new Date().toISOString(),
+    }).maybeSingle(); // 이미 있으면 무시 (에러 무시)
+  }
+
+  const insertData: Record<string, unknown> = {
     id: comment.id,
     poll_id: comment.pollId,
     user_id: comment.userId,
@@ -615,8 +634,14 @@ export async function dbCreateComment(comment: Comment): Promise<{ success: bool
     dislikes: 0,
     is_best: false,
     created_at: comment.createdAt,
-    parent_id: comment.parentId || null,
-  });
+  };
+
+  // parent_id는 컬럼이 있을 때만 포함
+  if (comment.parentId) {
+    insertData.parent_id = comment.parentId;
+  }
+
+  const { error } = await client.from('comments').insert(insertData);
 
   if (error) {
     console.error('[Supabase] Comment 생성 실패:', error.message);
