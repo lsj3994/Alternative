@@ -66,6 +66,16 @@ CREATE TABLE IF NOT EXISTS comments (
   parent_id TEXT REFERENCES comments(id) ON DELETE CASCADE
 );
 
+-- 6. comment_votes 테이블 (추천/비추천 토글 — 크로스 디바이스 동기화)
+CREATE TABLE IF NOT EXISTS comment_votes (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  comment_id  TEXT NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  vote_type   TEXT NOT NULL CHECK (vote_type IN ('like', 'dislike')),
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (comment_id, user_id)   -- 1인 1댓글 1표
+);
+
 -- ============================================================
 -- 인덱스 (성능 최적화)
 -- ============================================================

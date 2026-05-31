@@ -691,6 +691,106 @@ export async function dbDislikeComment(commentId: string, _userId?: string): Pro
 }
 
 // ============================================================
+// Comment Votes (추천/비추천 토글 — 크로스 디바이스 동기화)
+// ============================================================
+
+/**
+ * 해당 유저의 모든 댓글 투표 이력을 DB에서 조회
+ * 로그인 후 마운트 시 호출해 localStorage 캐시와 동기화
+ */
+export async function dbGetMyCommentVotes(
+  userId: string
+): Promise<Record<string, 'like' | 'dislike'>> {
+  const client = getSupabaseClient();
+  if (!client) return {};
+
+  const { data, error } = await client
+    .from('comment_votes')
+    .select('comment_id, vote_type')
+    .eq('user_id', userId);
+
+  if (error || !data) return {};
+
+  const result: Record<string, 'like' | 'dislike'> = {};
+  for (const row of data) {
+    result[row.comment_id] = row.vote_type as 'like' | 'dislike';
+  }
+  return result;
+}
+
+/**
+ * 댓글 추천/비추천 토글
+ * - 같은 타입이 이미 있으면 → 취소 (DELETE + count -1)
+ * - 없으면 → 추가 (INSERT + count +1)
+ * @returns 'added' | 'removed'
+ */
+export async function dbToggleCommentVote(
+  commentId: string,
+  userId: string,
+  type: 'like' | 'dislike'
+): Promise<'added' | 'removed'> {
+  const client = getSupabaseClient();
+  if (!client) return 'added';
+
+  // 기존 투표 조회
+  const { data: existing } = await client
+    .from('comment_votes')
+    .select('id, vote_type')
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    // 같은 타입 → 취소
+    await client
+      .from('comment_votes')
+      .delete()
+      .eq('id', existing.id);
+
+    // comments 카운트 -1 (최솟값 0 보정)
+    const countCol = type === 'like' ? 'likes' : 'dislikes';
+    const { data: cur } = await client
+      .from('comments')
+      .select(countCol)
+      .eq('id', commentId)
+      .maybeSingle();
+
+    if (cur) {
+      const current = (cur as Record<string, number>)[countCol] || 0;
+      await client
+        .from('comments')
+        .update({ [countCol]: Math.max(0, current - 1) })
+        .eq('id', commentId);
+    }
+
+    return 'removed';
+  } else {
+    // 투표 없음 → 추가
+    await client
+      .from('comment_votes')
+      .insert({ comment_id: commentId, user_id: userId, vote_type: type });
+
+    const countCol = type === 'like' ? 'likes' : 'dislikes';
+    const { data: cur } = await client
+      .from('comments')
+      .select(countCol)
+      .eq('id', commentId)
+      .maybeSingle();
+
+    if (cur) {
+      const current = (cur as Record<string, number>)[countCol] || 0;
+      await client
+        .from('comments')
+        .update({ [countCol]: current + 1 })
+        .eq('id', commentId);
+    }
+
+    return 'added';
+  }
+}
+
+
+// ============================================================
 // Statistics (통계)
 // ============================================================
 

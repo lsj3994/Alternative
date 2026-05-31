@@ -10,8 +10,8 @@ import {
   dbGetVotedOptions,
   dbCreateComment,
   dbCreatePoll,
-  dbLikeComment,
-  dbDislikeComment,
+  dbToggleCommentVote,
+  dbGetMyCommentVotes,
   dbCancelVotes,
 } from './supabase-db';
 
@@ -285,15 +285,16 @@ export function getComments(pollId: string): Comment[] {
   return getAllComments().filter((c) => c.pollId === pollId);
 }
 
-// ---- Comment Votes (추천/비추천 이력) ----
+// ---- Comment Votes (추천/비추천 토글 + 크로스 디바이스 동기화) ----
 
 type CommentVoteRecord = Record<string, 'like' | 'dislike'>; // commentId -> 'like' | 'dislike'
 
-/** 내가 누른 댓글 추천/비추천 이력 (userId 기준) */
+/** localStorage 키 (유저별 분리) */
 function getCommentVoteKey(userId: string): string {
   return `${KEYS.COMMENT_VOTES}_${userId}`;
 }
 
+/** localStorage에서 내 투표 이력 전체 조회 */
 export function getCommentVotes(userId: string): CommentVoteRecord {
   const raw = getItem(getCommentVoteKey(userId));
   if (!raw) return {};
@@ -304,52 +305,82 @@ export function getCommentVotes(userId: string): CommentVoteRecord {
   }
 }
 
+/** 특정 댓글에 대한 내 투표 상태 */
 export function getMyCommentVote(commentId: string, userId: string): 'like' | 'dislike' | null {
   return getCommentVotes(userId)[commentId] || null;
 }
 
-function setCommentVote(commentId: string, userId: string, type: 'like' | 'dislike'): void {
+/** localStorage에 투표 상태 저장 */
+function setLocalCommentVote(commentId: string, userId: string, type: 'like' | 'dislike'): void {
   const record = getCommentVotes(userId);
   record[commentId] = type;
   setItem(getCommentVoteKey(userId), JSON.stringify(record));
 }
 
-/**
- * 댓글 좋아요 — 로그인 유저만, 댓글당 1회만 허용
- * @returns 'ok' | 'not_logged_in' | 'already_voted'
- */
-export function likeCommentSync(
-  commentId: string,
-  userId: string
-): 'ok' | 'not_logged_in' | 'already_voted' {
-  if (!isLoggedIn()) return 'not_logged_in';
-  const existing = getMyCommentVote(commentId, userId);
-  if (existing) return 'already_voted';
-
-  setCommentVote(commentId, userId, 'like');
-  if (canUseSupabase()) {
-    dbLikeComment(commentId, userId).catch((err) => console.warn('[Supabase] Like 실패:', err));
-  }
-  return 'ok';
+/** localStorage에서 투표 상태 제거 */
+function removeLocalCommentVote(commentId: string, userId: string): void {
+  const record = getCommentVotes(userId);
+  delete record[commentId];
+  setItem(getCommentVoteKey(userId), JSON.stringify(record));
 }
 
 /**
- * 댓글 싫어요 — 로그인 유저만, 댓글당 1회만 허용
- * @returns 'ok' | 'not_logged_in' | 'already_voted'
+ * DB에서 투표 이력을 가져와 localStorage에 동기화
+ * 로그인 후 마운트 시 1회 호출 → 타 기기에서 누른 투표 반영
  */
-export function dislikeCommentSync(
-  commentId: string,
+export async function syncCommentVotesFromDB(
   userId: string
-): 'ok' | 'not_logged_in' | 'already_voted' {
-  if (!isLoggedIn()) return 'not_logged_in';
-  const existing = getMyCommentVote(commentId, userId);
-  if (existing) return 'already_voted';
-
-  setCommentVote(commentId, userId, 'dislike');
-  if (canUseSupabase()) {
-    dbDislikeComment(commentId, userId).catch((err) => console.warn('[Supabase] Dislike 실패:', err));
+): Promise<CommentVoteRecord> {
+  if (!canUseSupabase()) return getCommentVotes(userId);
+  try {
+    const dbVotes = await dbGetMyCommentVotes(userId);
+    // DB 결과를 localStorage에 덮어쓰기 (DB가 진실의 원천)
+    setItem(getCommentVoteKey(userId), JSON.stringify(dbVotes));
+    return dbVotes;
+  } catch (err) {
+    console.warn('[Supabase] 댓글 투표 이력 동기화 실패:', err);
+    return getCommentVotes(userId);
   }
-  return 'ok';
+}
+
+/**
+ * 댓글 추천/비추천 토글
+ * - 로그인 유저만 허용
+ * - 같은 타입 재클릭 → 취소
+ * - 낙관적 업데이트(localStorage) + 비동기 DB 반영
+ * @returns { action: 'added'|'removed', type }
+ */
+export function toggleCommentVote(
+  commentId: string,
+  userId: string,
+  type: 'like' | 'dislike'
+): { action: 'added' | 'removed'; type: 'like' | 'dislike' } | { action: 'not_logged_in' } {
+  if (!isLoggedIn()) return { action: 'not_logged_in' };
+
+  const existing = getMyCommentVote(commentId, userId);
+
+  if (existing === type) {
+    // 같은 타입 → 취소
+    removeLocalCommentVote(commentId, userId);
+    if (canUseSupabase()) {
+      dbToggleCommentVote(commentId, userId, type).catch((err) =>
+        console.warn('[Supabase] 투표 취소 실패:', err)
+      );
+    }
+    return { action: 'removed', type };
+  } else if (!existing) {
+    // 투표 없음 → 추가
+    setLocalCommentVote(commentId, userId, type);
+    if (canUseSupabase()) {
+      dbToggleCommentVote(commentId, userId, type).catch((err) =>
+        console.warn('[Supabase] 투표 추가 실패:', err)
+      );
+    }
+    return { action: 'added', type };
+  } else {
+    // 반대 타입이 이미 있음 → 먼저 취소 후 추가 불가 (토스트로 안내)
+    return { action: 'not_logged_in' }; // 재사용: 'blocked' 역할
+  }
 }
 
 // ---- Theme ----

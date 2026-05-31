@@ -4,8 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Comment, PollOption } from '@/lib/types';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
-import { MessageSquare, TrendingUp, Clock, Crown, LogIn } from 'lucide-react';
-import { likeCommentSync, dislikeCommentSync, isLoggedIn, getCurrentUserId, getMyCommentVote } from '@/lib/store';
+import { TrendingUp, Clock, Crown, LogIn } from 'lucide-react';
+import {
+  toggleCommentVote,
+  syncCommentVotesFromDB,
+  isLoggedIn,
+  getCurrentUserId,
+} from '@/lib/store';
 import { fetchPollComments } from '@/lib/data';
 
 interface CommentSectionProps {
@@ -30,6 +35,9 @@ export default function CommentSection({
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // ---- 내 투표 상태 (commentId -> 'like'|'dislike') ----
+  const [myVotes, setMyVotes] = useState<Record<string, 'like' | 'dislike'>>({});
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
@@ -45,60 +53,80 @@ export default function CommentSection({
     }
   }, [pollId]);
 
-  // 마운트 시 DB에서 최신 댓글 로드 (캐시 무시)
+  // 마운트 시 댓글 로드 + 내 투표 이력 DB 동기화
   useEffect(() => {
     refreshComments();
+
+    if (isLoggedIn()) {
+      const userId = getCurrentUserId();
+      syncCommentVotesFromDB(userId).then((votes) => {
+        setMyVotes(votes);
+      });
+    }
   }, [refreshComments]);
 
   const handleAddComment = (comment: Comment) => {
-    // 낙관적 업데이트: 즉시 UI에 표시
     setComments((prev) => {
-      // 중복 방지
       if (prev.some((c) => c.id === comment.id)) return prev;
       return [comment, ...prev];
     });
     setReplyTo(null);
-
-    // DB 저장 완료 후 재조회하여 완전 동기화
     setTimeout(() => {
       refreshComments();
     }, 2000);
   };
 
-  const handleLike = (commentId: string) => {
+  // 추천/비추천 통합 핸들러 (토글)
+  const handleVote = (commentId: string, type: 'like' | 'dislike') => {
     if (!isLoggedIn()) {
-      showToast('로그인 후 추천할 수 있어요 😊');
+      showToast(type === 'like' ? '로그인 후 추천할 수 있어요 😊' : '로그인 후 비추천할 수 있어요 😐');
       return;
     }
-    const userId = getCurrentUserId();
-    const existing = getMyCommentVote(commentId, userId);
-    if (existing) {
-      showToast('이미 의견을 남겼어요!');
-      return;
-    }
-    setComments((prev) =>
-      prev.map((c) => (c.id === commentId ? { ...c, likes: c.likes + 1 } : c))
-    );
-    likeCommentSync(commentId, userId);
-  };
 
-  const handleDislike = (commentId: string) => {
-    if (!isLoggedIn()) {
-      showToast('로그인 후 비추천할 수 있어요 😐');
-      return;
-    }
     const userId = getCurrentUserId();
-    const existing = getMyCommentVote(commentId, userId);
-    if (existing) {
-      showToast('이미 의견을 남겼어요!');
+    const currentVote = myVotes[commentId];
+
+    // 반대 타입이 이미 있는 경우 → 먼저 기존 투표 취소 안내
+    if (currentVote && currentVote !== type) {
+      showToast('이미 다른 의견을 남겼어요. 먼저 취소해 주세요!');
       return;
     }
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId ? { ...c, dislikes: c.dislikes + 1 } : c
-      )
-    );
-    dislikeCommentSync(commentId, userId);
+
+    const result = toggleCommentVote(commentId, userId, type);
+
+    if (result.action === 'not_logged_in') {
+      showToast('로그인이 필요해요');
+      return;
+    }
+
+    // 낙관적 UI 업데이트
+    if (result.action === 'added') {
+      setMyVotes((prev) => ({ ...prev, [commentId]: type }));
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c.id !== commentId) return c;
+          return type === 'like'
+            ? { ...c, likes: c.likes + 1 }
+            : { ...c, dislikes: c.dislikes + 1 };
+        })
+      );
+    } else {
+      // 취소
+      setMyVotes((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c.id !== commentId) return c;
+          return type === 'like'
+            ? { ...c, likes: Math.max(0, c.likes - 1) }
+            : { ...c, dislikes: Math.max(0, c.dislikes - 1) };
+        })
+      );
+      showToast(type === 'like' ? '추천을 취소했어요' : '비추천을 취소했어요');
+    }
   };
 
   // 필터링
@@ -113,9 +141,8 @@ export default function CommentSection({
   // 정렬 (부모 댓글 기준)
   let sortedRoot = [...rootComments].sort((a, b) => {
     if (sortMode === 'latest')
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // descending (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     if (sortMode === 'likes') return b.likes - a.likes;
-    // best: likes - dislikes
     return b.likes - b.dislikes - (a.likes - a.dislikes);
   });
 
@@ -127,8 +154,6 @@ export default function CommentSection({
   const getAlign = (optionId: string) => {
     return options[0]?.id === optionId ? 'left' : 'right';
   };
-
-  const currentUserId = isLoggedIn() ? getCurrentUserId() : null;
 
   return (
     <div className="flex flex-col">
@@ -212,39 +237,39 @@ export default function CommentSection({
               <CommentItem
                 comment={comment}
                 align={getAlign(comment.optionId)}
-                myVote={currentUserId ? getMyCommentVote(comment.id, currentUserId) : null}
-                onLike={handleLike}
-                onDislike={handleDislike}
+                myVote={myVotes[comment.id] ?? null}
+                onLike={(id) => handleVote(id, 'like')}
+                onDislike={(id) => handleVote(id, 'dislike')}
                 onReply={(c) => setReplyTo(c)}
                 index={i}
               />
-                {replies.map((reply, j) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    align={getAlign(reply.optionId)}
-                    isReply
-                    myVote={currentUserId ? getMyCommentVote(reply.id, currentUserId) : null}
-                    onLike={handleLike}
-                    onDislike={handleDislike}
-                    index={i + 0.1 * (j + 1)}
+              {replies.map((reply, j) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  align={getAlign(reply.optionId)}
+                  isReply
+                  myVote={myVotes[reply.id] ?? null}
+                  onLike={(id) => handleVote(id, 'like')}
+                  onDislike={(id) => handleVote(id, 'dislike')}
+                  index={i + 0.1 * (j + 1)}
+                />
+              ))}
+
+              {/* Inline Reply Form */}
+              {replyTo?.id === comment.id && (
+                <div className="mt-1 mb-4 animate-fade-in pl-4 sm:pl-8 pr-4 sm:pr-8">
+                  <CommentForm
+                    pollId={pollId}
+                    options={options}
+                    votedOptionId={votedOptionId || ''}
+                    replyToComment={replyTo}
+                    onCancelReply={() => setReplyTo(null)}
+                    onSubmit={handleAddComment}
                   />
-                ))}
-                
-                {/* Inline Reply Form */}
-                {replyTo?.id === comment.id && (
-                  <div className="mt-1 mb-4 animate-fade-in pl-4 sm:pl-8 pr-4 sm:pr-8">
-                    <CommentForm
-                      pollId={pollId}
-                      options={options}
-                      votedOptionId={votedOptionId || ''}
-                      replyToComment={replyTo}
-                      onCancelReply={() => setReplyTo(null)}
-                      onSubmit={handleAddComment}
-                    />
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
           );
         })}
         {sortedRoot.length === 0 && (
@@ -265,7 +290,7 @@ export default function CommentSection({
         </button>
       )}
 
-      {/* Main Comment Form (At the bottom like a chat app) */}
+      {/* Main Comment Form */}
       {!replyTo && (
         <div className="sticky bottom-4 z-10">
           <CommentForm
