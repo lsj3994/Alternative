@@ -10,6 +10,7 @@ interface CommentItemProps {
   comment: Comment;
   align?: 'left' | 'right';
   isReply?: boolean;
+  myVote?: 'like' | 'dislike' | null;
   onLike: (id: string) => void;
   onDislike: (id: string) => void;
   onReply?: (comment: Comment) => void;
@@ -27,11 +28,23 @@ function timeAgo(dateString: string): string {
   return `${days}일 전`;
 }
 
-export default function CommentItem({ comment, align = 'left', isReply = false, onLike, onDislike, onReply, index = 0 }: CommentItemProps) {
+export default function CommentItem({
+  comment,
+  align = 'left',
+  isReply = false,
+  myVote = null,
+  onLike,
+  onDislike,
+  onReply,
+  index = 0,
+}: CommentItemProps) {
   const netScore = comment.likes - comment.dislikes;
   const currentUserId = getCurrentUserId();
   const isMine = comment.userId === currentUserId;
   const isRight = align === 'right';
+
+  // 이미 투표한 경우 버튼 비활성화
+  const hasVoted = myVote !== null;
 
   return (
     <div
@@ -69,20 +82,46 @@ export default function CommentItem({ comment, align = 'left', isReply = false, 
           <span>{timeAgo(comment.createdAt)}</span>
           
           <div className={`flex items-center gap-2 ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+            {/* 추천 버튼 */}
             <button
-              onClick={() => onLike(comment.id)}
-              className="flex items-center gap-1 hover:text-primary transition-colors group"
+              onClick={() => !hasVoted && onLike(comment.id)}
+              disabled={hasVoted}
+              title={hasVoted ? '이미 의견을 남겼어요' : '추천'}
+              className={`flex items-center gap-1 transition-colors group ${
+                myVote === 'like'
+                  ? 'text-primary font-semibold cursor-default'
+                  : hasVoted
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:text-primary cursor-pointer'
+              }`}
             >
-              <ThumbsUp size={12} className="group-hover:animate-bounce-sm" />
+              <ThumbsUp
+                size={12}
+                className={myVote === 'like' ? 'fill-current' : (!hasVoted ? 'group-hover:animate-bounce-sm' : '')}
+              />
               <span>{comment.likes}</span>
             </button>
+
+            {/* 비추천 버튼 */}
             <button
-              onClick={() => onDislike(comment.id)}
-              className="flex items-center gap-1 hover:text-danger transition-colors"
+              onClick={() => !hasVoted && onDislike(comment.id)}
+              disabled={hasVoted}
+              title={hasVoted ? '이미 의견을 남겼어요' : '비추천'}
+              className={`flex items-center gap-1 transition-colors ${
+                myVote === 'dislike'
+                  ? 'text-danger font-semibold cursor-default'
+                  : hasVoted
+                  ? 'opacity-40 cursor-not-allowed'
+                  : 'hover:text-danger cursor-pointer'
+              }`}
             >
-              <ThumbsDown size={12} />
+              <ThumbsDown
+                size={12}
+                className={myVote === 'dislike' ? 'fill-current' : ''}
+              />
               <span>{comment.dislikes}</span>
             </button>
+
             <span className={`font-semibold ${netScore > 0 ? 'text-primary' : netScore < 0 ? 'text-danger' : ''}`}>
               {netScore > 0 ? '+' : ''}{netScore !== 0 ? netScore : ''}
             </span>

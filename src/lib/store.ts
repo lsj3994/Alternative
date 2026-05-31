@@ -25,6 +25,7 @@ const KEYS = {
   USER_POLLS: 'bangtoron_user_polls',
   GUEST_ID: 'bangtoron_guest_id',
   LOCAL_USERS: 'bangtoron_local_users',
+  COMMENT_VOTES: 'bangtoron_comment_votes',
 } as const;
 
 export const ADMIN_USER: User = {
@@ -284,18 +285,71 @@ export function getComments(pollId: string): Comment[] {
   return getAllComments().filter((c) => c.pollId === pollId);
 }
 
-/** 댓글 좋아요 — Supabase 연동 */
-export function likeCommentSync(commentId: string): void {
-  if (canUseSupabase()) {
-    dbLikeComment(commentId).catch((err) => console.warn('[Supabase] Like 실패:', err));
+// ---- Comment Votes (추천/비추천 이력) ----
+
+type CommentVoteRecord = Record<string, 'like' | 'dislike'>; // commentId -> 'like' | 'dislike'
+
+/** 내가 누른 댓글 추천/비추천 이력 (userId 기준) */
+function getCommentVoteKey(userId: string): string {
+  return `${KEYS.COMMENT_VOTES}_${userId}`;
+}
+
+export function getCommentVotes(userId: string): CommentVoteRecord {
+  const raw = getItem(getCommentVoteKey(userId));
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as CommentVoteRecord;
+  } catch {
+    return {};
   }
 }
 
-/** 댓글 싫어요 — Supabase 연동 */
-export function dislikeCommentSync(commentId: string): void {
+export function getMyCommentVote(commentId: string, userId: string): 'like' | 'dislike' | null {
+  return getCommentVotes(userId)[commentId] || null;
+}
+
+function setCommentVote(commentId: string, userId: string, type: 'like' | 'dislike'): void {
+  const record = getCommentVotes(userId);
+  record[commentId] = type;
+  setItem(getCommentVoteKey(userId), JSON.stringify(record));
+}
+
+/**
+ * 댓글 좋아요 — 로그인 유저만, 댓글당 1회만 허용
+ * @returns 'ok' | 'not_logged_in' | 'already_voted'
+ */
+export function likeCommentSync(
+  commentId: string,
+  userId: string
+): 'ok' | 'not_logged_in' | 'already_voted' {
+  if (!isLoggedIn()) return 'not_logged_in';
+  const existing = getMyCommentVote(commentId, userId);
+  if (existing) return 'already_voted';
+
+  setCommentVote(commentId, userId, 'like');
   if (canUseSupabase()) {
-    dbDislikeComment(commentId).catch((err) => console.warn('[Supabase] Dislike 실패:', err));
+    dbLikeComment(commentId, userId).catch((err) => console.warn('[Supabase] Like 실패:', err));
   }
+  return 'ok';
+}
+
+/**
+ * 댓글 싫어요 — 로그인 유저만, 댓글당 1회만 허용
+ * @returns 'ok' | 'not_logged_in' | 'already_voted'
+ */
+export function dislikeCommentSync(
+  commentId: string,
+  userId: string
+): 'ok' | 'not_logged_in' | 'already_voted' {
+  if (!isLoggedIn()) return 'not_logged_in';
+  const existing = getMyCommentVote(commentId, userId);
+  if (existing) return 'already_voted';
+
+  setCommentVote(commentId, userId, 'dislike');
+  if (canUseSupabase()) {
+    dbDislikeComment(commentId, userId).catch((err) => console.warn('[Supabase] Dislike 실패:', err));
+  }
+  return 'ok';
 }
 
 // ---- Theme ----

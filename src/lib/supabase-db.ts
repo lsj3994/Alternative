@@ -652,7 +652,7 @@ export async function dbCreateComment(comment: Comment): Promise<{ success: bool
 }
 
 /** 댓글 좋아요 */
-export async function dbLikeComment(commentId: string): Promise<void> {
+export async function dbLikeComment(commentId: string, _userId?: string): Promise<void> {
   const client = getSupabaseClient();
   if (!client) return;
 
@@ -672,7 +672,7 @@ export async function dbLikeComment(commentId: string): Promise<void> {
 }
 
 /** 댓글 싫어요 */
-export async function dbDislikeComment(commentId: string): Promise<void> {
+export async function dbDislikeComment(commentId: string, _userId?: string): Promise<void> {
   const client = getSupabaseClient();
   if (!client) return;
 

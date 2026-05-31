@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Comment, PollOption } from '@/lib/types';
 import CommentItem from './CommentItem';
 import CommentForm from './CommentForm';
-import { MessageSquare, TrendingUp, Clock, Crown } from 'lucide-react';
-import { likeCommentSync, dislikeCommentSync } from '@/lib/store';
+import { MessageSquare, TrendingUp, Clock, Crown, LogIn } from 'lucide-react';
+import { likeCommentSync, dislikeCommentSync, isLoggedIn, getCurrentUserId, getMyCommentVote } from '@/lib/store';
 import { fetchPollComments } from '@/lib/data';
 
 interface CommentSectionProps {
@@ -28,6 +28,12 @@ export default function CommentSection({
   const [filterOptionId, setFilterOptionId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
 
   // DB에서 직접 댓글 로드
   const refreshComments = useCallback(async () => {
@@ -60,19 +66,39 @@ export default function CommentSection({
   };
 
   const handleLike = (commentId: string) => {
+    if (!isLoggedIn()) {
+      showToast('로그인 후 추천할 수 있어요 😊');
+      return;
+    }
+    const userId = getCurrentUserId();
+    const existing = getMyCommentVote(commentId, userId);
+    if (existing) {
+      showToast('이미 의견을 남겼어요!');
+      return;
+    }
     setComments((prev) =>
       prev.map((c) => (c.id === commentId ? { ...c, likes: c.likes + 1 } : c))
     );
-    likeCommentSync(commentId);
+    likeCommentSync(commentId, userId);
   };
 
   const handleDislike = (commentId: string) => {
+    if (!isLoggedIn()) {
+      showToast('로그인 후 비추천할 수 있어요 😐');
+      return;
+    }
+    const userId = getCurrentUserId();
+    const existing = getMyCommentVote(commentId, userId);
+    if (existing) {
+      showToast('이미 의견을 남겼어요!');
+      return;
+    }
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId ? { ...c, dislikes: c.dislikes + 1 } : c
       )
     );
-    dislikeCommentSync(commentId);
+    dislikeCommentSync(commentId, userId);
   };
 
   // 필터링
@@ -102,8 +128,18 @@ export default function CommentSection({
     return options[0]?.id === optionId ? 'left' : 'right';
   };
 
+  const currentUserId = isLoggedIn() ? getCurrentUserId() : null;
+
   return (
     <div className="flex flex-col">
+      {/* 토스트 알림 */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-fade-in">
+          <LogIn size={14} />
+          {toast}
+        </div>
+      )}
+
       {/* 댓글 수 표시 */}
       <div className="flex items-center gap-2 mb-4 text-sm text-text-muted">
         <span className="font-semibold text-text-primary">{comments.length}개</span>의 의견
@@ -176,6 +212,7 @@ export default function CommentSection({
               <CommentItem
                 comment={comment}
                 align={getAlign(comment.optionId)}
+                myVote={currentUserId ? getMyCommentVote(comment.id, currentUserId) : null}
                 onLike={handleLike}
                 onDislike={handleDislike}
                 onReply={(c) => setReplyTo(c)}
@@ -187,6 +224,7 @@ export default function CommentSection({
                     comment={reply}
                     align={getAlign(reply.optionId)}
                     isReply
+                    myVote={currentUserId ? getMyCommentVote(reply.id, currentUserId) : null}
                     onLike={handleLike}
                     onDislike={handleDislike}
                     index={i + 0.1 * (j + 1)}
