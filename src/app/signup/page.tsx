@@ -208,7 +208,7 @@ export default function SignupPage() {
             {errors.nickname && (
               <p className="text-xs text-danger mt-1.5 ml-1">{errors.nickname}</p>
             )}
-            <p className="text-xs text-text-muted mt-2 ml-1 font-medium">
+            <p className="text-sm text-danger mt-2 ml-1 font-bold">
               ※ 성별, 나이대, 지역은 통계를 위한 자료입니다.
             </p>
           </div>
