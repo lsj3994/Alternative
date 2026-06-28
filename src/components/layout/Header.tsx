@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Vote, Plus, Sun, Moon, Menu, X, User, LogOut } from 'lucide-react';
+import { Vote, Plus, Sun, Moon, Menu, X, User, LogOut, MessageSquare, Mail } from 'lucide-react';
 import { getTheme, saveTheme, getUser, logout } from '@/lib/store';
 
 export default function Header() {
@@ -72,6 +72,22 @@ export default function Header() {
           >
             <Vote size={16} />
             투표 목록
+          </Link>
+          <Link
+            href="/opinions"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
+            id="nav-opinions"
+          >
+            <MessageSquare size={16} />
+            한줄 의견
+          </Link>
+          <Link
+            href="/contact"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
+            id="nav-contact"
+          >
+            <Mail size={16} />
+            문의하기
           </Link>
           <Link
             href="/create"
@@ -181,6 +197,24 @@ export default function Header() {
             >
               <Vote size={16} />
               투표 목록
+            </Link>
+            <Link
+              href="/opinions"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+              id="mobile-nav-opinions"
+            >
+              <MessageSquare size={16} />
+              한줄 의견
+            </Link>
+            <Link
+              href="/contact"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+              id="mobile-nav-contact"
+            >
+              <Mail size={16} />
+              문의하기
             </Link>
             <Link
               href="/create"
