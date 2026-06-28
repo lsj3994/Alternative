@@ -317,14 +317,48 @@ const SPECIAL_TRANSLATIONS: Record<string, string> = {
   '로아': 'lost-ark',
 };
 
-// 프롬프트 분석을 통해 검색 품질을 높이기 위한 카테고리 태그 매칭
-function getCategoryTag(prompt: string): string {
-  if (prompt.includes('게임')) return 'gaming,game';
-  if (prompt.includes('음식')) return 'food,cooking';
-  if (prompt.includes('라이프')) return 'lifestyle,life';
-  if (prompt.includes('스포츠')) return 'sports,sport';
-  if (prompt.includes('IT/기술')) return 'technology,tech,computer';
-  if (prompt.includes('연예')) return 'entertainment,celebrity';
+// 프롬프트 및 선택지 분석을 통해 검색 품질을 높이기 위한 카테고리 태그 매칭
+function getCategoryTag(prompt: string, label: string): string {
+  const combined = (prompt + ' ' + label).toLowerCase();
+  
+  // 게임 관련 키워드
+  if (combined.includes('게임') || combined.includes('game') || combined.includes('롤') || combined.includes('배그') || combined.includes('오버워치') || combined.includes('스타') || combined.includes('메이플') || combined.includes('던파') || combined.includes('닌텐도') || combined.includes('플레이스테이션')) {
+    return 'gaming,game';
+  }
+  
+  // 음식/찌개/탕/고기 등 요리 키워드
+  if (
+    combined.includes('음식') || combined.includes('요리') || combined.includes('푸드') || combined.includes('식사') || combined.includes('맛') ||
+    combined.endsWith('찌개') || combined.endsWith('국') || combined.endsWith('탕') || combined.endsWith('찜') ||
+    combined.endsWith('면') || combined.endsWith('국수') || combined.includes('라면') || combined.includes('우동') ||
+    combined.endsWith('밥') || combined.includes('덮밥') || combined.includes('볶음밥') ||
+    combined.includes('치킨') || combined.includes('삼겹살') || combined.includes('고기') || combined.includes('갈비') || combined.includes('족발') || combined.includes('보쌈') ||
+    combined.includes('피자') || combined.includes('햄버거') || combined.includes('돈까스') || combined.includes('돈가스') || combined.includes('파스타') ||
+    combined.includes('떡볶이') || combined.includes('순대') || combined.includes('튀김') || combined.includes('만두')
+  ) {
+    return 'food,cooking,dish';
+  }
+  
+  // 스포츠 관련
+  if (combined.includes('스포츠') || combined.includes('축구') || combined.includes('야구') || combined.includes('농구') || combined.includes('배구') || combined.includes('테니스') || combined.includes('골프') || combined.includes('수영') || combined.includes('운동') || combined.includes('헬스')) {
+    return 'sports,sport';
+  }
+  
+  // IT/전자기기 관련
+  if (combined.includes('전자기기') || combined.includes('컴퓨터') || combined.includes('노트북') || combined.includes('폰') || combined.includes('아이폰') || combined.includes('갤럭시') || combined.includes('맥북') || combined.includes('윈도우') || combined.includes('it') || combined.includes('tech') || combined.includes('인공지능') || combined.includes('ai')) {
+    return 'technology,tech,device';
+  }
+  
+  // 연예/대중문화 관련
+  if (combined.includes('연예') || combined.includes('가수') || combined.includes('배우') || combined.includes('아이돌') || combined.includes('영화') || combined.includes('드라마') || combined.includes('음악') || combined.includes('노래') || combined.includes('춤')) {
+    return 'entertainment,celebrity,media';
+  }
+  
+  // 라이프/여행/일상 관련
+  if (combined.includes('라이프') || combined.includes('생활') || combined.includes('일상') || combined.includes('여행') || combined.includes('쇼핑') || combined.includes('패션') || combined.includes('날씨') || combined.includes('계절')) {
+    return 'lifestyle,life';
+  }
+  
   return '';
 }
 export async function generateAIImage(prompt: string, optionLabel?: string): Promise<string> {
@@ -364,9 +398,12 @@ export async function generateAIImage(prompt: string, optionLabel?: string): Pro
           .replace(/\s+/g, ',');
 
         // 카테고리 태그 추가 (Flickr 검색 시 연관도가 낮은 키워드의 폴백용)
-        const catTag = getCategoryTag(prompt);
+        const catTag = getCategoryTag(prompt, label);
         if (catTag) {
           query = `${query},${catTag}`;
+        } else {
+          // 카테고리가 매칭되지 않아 검색 실패 시 곰(동물)이 나오는 것을 막기 위해 추상/미니멀 태그 폴백 사용
+          query = `${query},abstract,minimalist`;
         }
 
         // LoremFlickr에서 해당 태그가 포함된 실시간 무료 이미지 검색
