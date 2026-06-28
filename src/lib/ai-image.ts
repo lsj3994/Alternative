@@ -5,9 +5,6 @@
 // 이모지 + 그라디언트 배경으로 항상 선택지와 연관된 이미지를 만듭니다.
 // ============================================================
 
-/**
- * 한국어 키워드 → 이모지 + 영문 키워드 매핑
- */
 interface KeywordMapping {
   emoji: string;
   label: string;
@@ -15,25 +12,58 @@ interface KeywordMapping {
 }
 
 const KEYWORD_MAP: Record<string, KeywordMapping> = {
-  // 음식
+  // 음식 - 한식/찌개류
+  '된장찌개': { emoji: '🍲', label: '된장찌개', gradient: ['#795548', '#5d4037'] },
+  '김치찌개': { emoji: '🍲', label: '김치찌개', gradient: ['#c62828', '#b71c1c'] },
+  '부대찌개': { emoji: '🍲', label: '부대찌개', gradient: ['#d84315', '#bf360c'] },
+  '순두부찌개': { emoji: '🍲', label: '순두부찌개', gradient: ['#e64a19', '#d84315'] },
+  '찌개': { emoji: '🍲', label: 'Stew', gradient: ['#8d6e63', '#6d4c41'] },
+  '국밥': { emoji: '🍲', label: '국밥', gradient: ['#f5f0e6', '#c8a96e'] },
+  '비빔밥': { emoji: '🍚', label: '비빔밥', gradient: ['#2e7d32', '#c0392b'] },
+  '볶음밥': { emoji: '🍛', label: 'Fried Rice', gradient: ['#fbc02d', '#f57f17'] },
+  '제육볶음': { emoji: '🔥', label: '제육볶음', gradient: ['#e64a19', '#c62828'] },
+  '제육': { emoji: '🔥', label: '제육', gradient: ['#e64a19', '#c62828'] },
+  '보쌈': { emoji: '🥩', label: '보쌈', gradient: ['#8d6e63', '#d7ccc8'] },
+  '족발': { emoji: '🍖', label: '족발', gradient: ['#5d4037', '#3e2723'] },
+  '곱창': { emoji: '🔥', label: '곱창', gradient: ['#ff8f00', '#ff6f00'] },
+  '막창': { emoji: '🔥', label: '막창', gradient: ['#ff8f00', '#ff6f00'] },
+  '삼겹살': { emoji: '🥓', label: '삼겹살', gradient: ['#a1532e', '#d4764e'] },
+  '갈비': { emoji: '🍖', label: '갈비', gradient: ['#6d4c41', '#4e342e'] },
+  '불고기': { emoji: '🥩', label: 'Bulgogi', gradient: ['#795548', '#5d4037'] },
+  
+  // 음식 - 분식/야식/간식류
+  '떡볶이': { emoji: '🫕', label: '떡볶이', gradient: ['#c62828', '#ef5350'] },
+  '김밥': { emoji: '🍙', label: '김밥', gradient: ['#33691e', '#7cb342'] },
+  '순대': { emoji: '🍢', label: '순대', gradient: ['#37474f', '#212121'] },
+  '튀김': { emoji: '🍤', label: '튀김', gradient: ['#ffb300', '#ff8f00'] },
+  '만두': { emoji: '🥟', label: '만두', gradient: ['#f5f5f5', '#e0e0e0'] },
+  '라면': { emoji: '🍜', label: '라면', gradient: ['#d32f2f', '#ff7043'] },
+  '핫도그': { emoji: '🌭', label: 'Hotdog', gradient: ['#ff8f00', '#d84315'] },
+  '탕수육': { emoji: '🥟', label: '탕수육', gradient: ['#e67e22', '#f1c40f'] },
+  '부먹': { emoji: '🫗', label: '부먹', gradient: ['#e67e22', '#f39c12'] },
+  '찍먹': { emoji: '🥢', label: '찍먹', gradient: ['#d35400', '#e74c3c'] },
+
+  // 음식 - 양식/일식/중식/기타
   '짜장면': { emoji: '🍜', label: '짜장면', gradient: ['#1a1a2e', '#4a3728'] },
   '짬뽕': { emoji: '🌶️', label: '짬뽕', gradient: ['#c0392b', '#e74c3c'] },
   '피자': { emoji: '🍕', label: 'Pizza', gradient: ['#e67e22', '#f39c12'] },
   '치킨': { emoji: '🍗', label: 'Chicken', gradient: ['#d4a017', '#f0c040'] },
+  '돈까스': { emoji: '🍛', label: '돈까스', gradient: ['#a1887f', '#8d6e63'] },
+  '돈가스': { emoji: '🍛', label: '돈가스', gradient: ['#a1887f', '#8d6e63'] },
+  '초밥': { emoji: '🍣', label: 'Sushi', gradient: ['#e65100', '#ff9800'] },
+  '파스타': { emoji: '🍝', label: 'Pasta', gradient: ['#ffb74d', '#ffa726'] },
+  '스파게티': { emoji: '🍝', label: 'Spaghetti', gradient: ['#ffb74d', '#ffa726'] },
+  '스테이크': { emoji: '🥩', label: 'Steak', gradient: ['#b71c1c', '#7f0000'] },
+  '샐러드': { emoji: '🥗', label: 'Salad', gradient: ['#2e7d32', '#4caf50'] },
+  '샌드위치': { emoji: '🥪', label: 'Sandwich', gradient: ['#ffb74d', '#8d6e63'] },
+  '햄버거': { emoji: '🍔', label: 'Burger', gradient: ['#c0392b', '#e67e22'] },
+  '냉면': { emoji: '🍜', label: '냉면', gradient: ['#80deea', '#0097a7'] },
+  '국수': { emoji: '🍜', label: 'Noodles', gradient: ['#fff9c4', '#fbc02d'] },
+  '우동': { emoji: '🍜', label: 'Udon', gradient: ['#ffcc80', '#f57c00'] },
+  
+  // 음식 - 디저트/음료
   '커피': { emoji: '☕', label: 'Coffee', gradient: ['#3e2723', '#795548'] },
   '차': { emoji: '🍵', label: 'Tea', gradient: ['#2e7d32', '#66bb6a'] },
-  '햄버거': { emoji: '🍔', label: 'Burger', gradient: ['#c0392b', '#e67e22'] },
-  '라면': { emoji: '🍜', label: '라면', gradient: ['#d32f2f', '#ff7043'] },
-  '떡볶이': { emoji: '🫕', label: '떡볶이', gradient: ['#c62828', '#ef5350'] },
-  '김밥': { emoji: '🍙', label: '김밥', gradient: ['#33691e', '#7cb342'] },
-  '초밥': { emoji: '🍣', label: 'Sushi', gradient: ['#e65100', '#ff9800'] },
-  '고기': { emoji: '🥩', label: 'Meat', gradient: ['#8d2222', '#c0392b'] },
-  '삼겹살': { emoji: '🥓', label: '삼겹살', gradient: ['#a1532e', '#d4764e'] },
-  '국밥': { emoji: '🍲', label: '국밥', gradient: ['#f5f0e6', '#c8a96e'] },
-  '탕수육': { emoji: '🥟', label: '탕수육', gradient: ['#e67e22', '#f1c40f'] },
-  '부먹': { emoji: '🫗', label: '부먹', gradient: ['#e67e22', '#f39c12'] },
-  '찍먹': { emoji: '🥢', label: '찍먹', gradient: ['#d35400', '#e74c3c'] },
-  '밥': { emoji: '🍚', label: 'Rice', gradient: ['#f5f5f5', '#e0e0e0'] },
   '빵': { emoji: '🍞', label: 'Bread', gradient: ['#d4a15a', '#e8c07a'] },
   '과일': { emoji: '🍎', label: 'Fruit', gradient: ['#c0392b', '#27ae60'] },
   '아이스크림': { emoji: '🍦', label: 'Ice Cream', gradient: ['#f8bbd0', '#f48fb1'] },
@@ -48,6 +78,8 @@ const KEYWORD_MAP: Record<string, KeywordMapping> = {
   '맥주': { emoji: '🍺', label: 'Beer', gradient: ['#f9a825', '#fdd835'] },
   '소주': { emoji: '🍶', label: '소주', gradient: ['#26c6da', '#80deea'] },
   '와인': { emoji: '🍷', label: 'Wine', gradient: ['#6a1b9a', '#9c27b0'] },
+  '고기': { emoji: '🥩', label: 'Meat', gradient: ['#8d2222', '#c0392b'] },
+  '밥': { emoji: '🍚', label: 'Rice', gradient: ['#f5f5f5', '#e0e0e0'] },
 
   // 자연/계절
   '산': { emoji: '🏔️', label: 'Mountain', gradient: ['#2e7d32', '#1b5e20'] },
@@ -68,6 +100,8 @@ const KEYWORD_MAP: Record<string, KeywordMapping> = {
   '곰': { emoji: '🐻', label: 'Bear', gradient: ['#6d4c41', '#8d6e63'] },
   '호랑이': { emoji: '🐯', label: 'Tiger', gradient: ['#e65100', '#ff9800'] },
   '사자': { emoji: '🦁', label: 'Lion', gradient: ['#f9a825', '#fdd835'] },
+  '판다': { emoji: '🐼', label: 'Panda', gradient: ['#212121', '#f5f5f5'] },
+  '여우': { emoji: '🦊', label: 'Fox', gradient: ['#e65100', '#ffb74d'] },
 
   // 스포츠/인물
   '손흥민': { emoji: '⚽', label: '손흥민', gradient: ['#1565c0', '#42a5f5'] },
@@ -75,17 +109,37 @@ const KEYWORD_MAP: Record<string, KeywordMapping> = {
   '축구': { emoji: '⚽', label: 'Soccer', gradient: ['#2e7d32', '#66bb6a'] },
   '야구': { emoji: '⚾', label: 'Baseball', gradient: ['#1565c0', '#1976d2'] },
   '농구': { emoji: '🏀', label: 'Basketball', gradient: ['#e65100', '#ff6d00'] },
+  '배구': { emoji: '🏐', label: 'Volleyball', gradient: ['#0288d1', '#e0e0e0'] },
+  '테니스': { emoji: '🎾', label: 'Tennis', gradient: ['#76ff03', '#64dd17'] },
+  '골프': { emoji: '⛳', label: 'Golf', gradient: ['#4caf50', '#81c784'] },
   '수영': { emoji: '🏊', label: 'Swimming', gradient: ['#0277bd', '#4fc3f7'] },
   '달리기': { emoji: '🏃', label: 'Running', gradient: ['#ff6f00', '#ffa726'] },
 
-  // IT/기기
+  // IT/기기/SNS
   '아이폰': { emoji: '📱', label: 'iPhone', gradient: ['#37474f', '#607d8b'] },
   '갤럭시': { emoji: '📱', label: 'Galaxy', gradient: ['#0d47a1', '#1976d2'] },
   '맥북': { emoji: '💻', label: 'MacBook', gradient: ['#bdbdbd', '#9e9e9e'] },
   '윈도우': { emoji: '🖥️', label: 'Windows', gradient: ['#0078d4', '#4fc3f7'] },
   '게임': { emoji: '🎮', label: 'Game', gradient: ['#6a1b9a', '#ab47bc'] },
+  '넷플릭스': { emoji: '🎬', label: 'Netflix', gradient: ['#e50914', '#221f1f'] },
   '유튜브': { emoji: '📺', label: 'YouTube', gradient: ['#c62828', '#ef5350'] },
   '인스타': { emoji: '📷', label: 'Instagram', gradient: ['#833ab4', '#fd1d1d'] },
+  '인스타그램': { emoji: '📷', label: 'Instagram', gradient: ['#833ab4', '#fd1d1d'] },
+  '틱톡': { emoji: '🎵', label: 'TikTok', gradient: ['#000000', '#00f2fe'] },
+  '페이스북': { emoji: '👥', label: 'Facebook', gradient: ['#1877f2', '#1565c0'] },
+  '카카오톡': { emoji: '💬', label: 'KakaoTalk', gradient: ['#ffeb3b', '#fbc02d'] },
+  '네이버': { emoji: '💚', label: 'Naver', gradient: ['#03c75a', '#02b350'] },
+  '챗gpt': { emoji: '🤖', label: 'ChatGPT', gradient: ['#10a37f', '#0f8a6b'] },
+
+  // 게임명
+  '롤': { emoji: '🎮', label: 'LoL', gradient: ['#0d47a1', '#1976d2'] },
+  '리그오브레전드': { emoji: '🎮', label: 'LoL', gradient: ['#0d47a1', '#1976d2'] },
+  '스타': { emoji: '🛸', label: 'StarCraft', gradient: ['#311b92', '#512da8'] },
+  '스타크래프트': { emoji: '🛸', label: 'StarCraft', gradient: ['#311b92', '#512da8'] },
+  '배그': { emoji: '🪖', label: 'PUBG', gradient: ['#e65100', '#f57c00'] },
+  '배틀그라운드': { emoji: '🪖', label: 'PUBG', gradient: ['#e65100', '#f57c00'] },
+  '마크': { emoji: '🧱', label: 'Minecraft', gradient: ['#3d5afe', '#8d6e63'] },
+  '마인크래프트': { emoji: '🧱', label: 'Minecraft', gradient: ['#3d5afe', '#8d6e63'] },
 
   // 교통
   '자동차': { emoji: '🚗', label: 'Car', gradient: ['#37474f', '#546e7a'] },
