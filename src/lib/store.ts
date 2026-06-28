@@ -36,7 +36,7 @@ export const ADMIN_USER: User = {
   region: '서울',
   createdAt: new Date().toISOString(),
   loginId: 'admin',
-  password: 'ADseonny!77'
+  password: 'ALseonny!77'
 };
 
 export function getLocalUsers(): User[] {
@@ -458,7 +458,7 @@ export function saveUserLocal(user: User): void {
 /** 로그인 기능 (Supabase 우선 -> 로컬 폴백) */
 export async function loginAsync(loginId: string, password: string): Promise<{ success: boolean; error?: string }> {
   // admin 계정은 즉시 로그인 성공 우회
-  if (loginId === 'admin' && password === 'ADseonny!77') {
+  if (loginId === 'admin' && password === 'ALseonny!77') {
     saveUserLocal(ADMIN_USER);
     // Supabase DB에도 어드민이 저장될 수 있도록 백그라운드 시도 (실패해도 무방)
     if (canUseSupabase()) {
