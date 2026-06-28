@@ -57,6 +57,10 @@ export default function RootLayout({
         <footer className="border-t border-border py-8 text-center text-sm text-text-secondary bg-surface-hover/30">
           <div className="max-w-7xl mx-auto px-4 space-y-3">
             <div className="flex justify-center gap-4 text-xs font-semibold text-text-muted">
+              <Link href="/about" className="hover:text-primary transition-colors">
+                서비스 소개
+              </Link>
+              <span>·</span>
               <Link href="/privacy" className="hover:text-primary transition-colors">
                 개인정보처리방침
               </Link>

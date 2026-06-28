@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Vote, Plus, Sun, Moon, Menu, X, User, LogOut, MessageSquare, Mail } from 'lucide-react';
+import { Vote, Plus, Sun, Moon, Menu, X, User, LogOut, MessageSquare, Mail, Info } from 'lucide-react';
 import { getTheme, saveTheme, getUser, logout } from '@/lib/store';
 
 export default function Header() {
@@ -80,6 +80,14 @@ export default function Header() {
           >
             <MessageSquare size={16} />
             한줄 의견
+          </Link>
+          <Link
+            href="/about"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
+            id="nav-about"
+          >
+            <Info size={16} />
+            소개
           </Link>
           <Link
             href="/contact"
@@ -206,6 +214,15 @@ export default function Header() {
             >
               <MessageSquare size={16} />
               한줄 의견
+            </Link>
+            <Link
+              href="/about"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+              id="mobile-nav-about"
+            >
+              <Info size={16} />
+              소개
             </Link>
             <Link
               href="/contact"
