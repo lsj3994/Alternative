@@ -856,3 +856,85 @@ export async function dbGetPollStats(pollId: string): Promise<PollStats | null> 
     })),
   };
 }
+
+// ============================================================
+// Free Opinions (자유 한줄 의견)
+// ============================================================
+
+/** 한줄 의견 목록 조회 (최신순) */
+export async function dbFetchOpinions(): Promise<{ id: string; name: string; content: string; color: 'blue' | 'orange' | 'green' | 'purple'; emoji: string; likes: number; createdAt: string }[]> {
+  const client = getSupabaseClient();
+  if (!client) return [];
+
+  const { data, error } = await client
+    .from('free_opinions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    console.error('[Supabase] Opinions 조회 실패:', error?.message);
+    return [];
+  }
+
+  return data.map((d: any) => ({
+    id: d.id,
+    name: d.name,
+    content: d.content,
+    color: d.color as 'blue' | 'orange' | 'green' | 'purple',
+    emoji: d.emoji,
+    likes: d.likes || 0,
+    createdAt: d.created_at,
+  }));
+}
+
+/** 한줄 의견 생성 */
+export async function dbCreateOpinion(opinion: {
+  id: string;
+  name: string;
+  content: string;
+  color: string;
+  emoji: string;
+  likes: number;
+  createdAt: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase 미연결' };
+
+  const { error } = await client.from('free_opinions').insert({
+    id: opinion.id,
+    name: opinion.name,
+    content: opinion.content,
+    color: opinion.color,
+    emoji: opinion.emoji,
+    likes: opinion.likes,
+    created_at: opinion.createdAt,
+  });
+
+  if (error) {
+    console.error('[Supabase] Opinion 생성 실패:', error.message);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/** 한줄 의견 좋아요 수 증가/감소 */
+export async function dbLikeOpinion(opinionId: string, increment: boolean): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  const { data } = await client
+    .from('free_opinions')
+    .select('likes')
+    .eq('id', opinionId)
+    .maybeSingle();
+
+  if (data) {
+    const diff = increment ? 1 : -1;
+    await client
+      .from('free_opinions')
+      .update({ likes: Math.max(0, (data.likes || 0) + diff) })
+      .eq('id', opinionId);
+  }
+}
+

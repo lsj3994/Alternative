@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, Send, Heart, Smile } from 'lucide-react';
 import { getUser } from '@/lib/store';
+import { canUseSupabase, dbFetchOpinions, dbCreateOpinion, dbLikeOpinion } from '@/lib/supabase-db';
 
 interface Opinion {
   id: string;
@@ -39,6 +40,45 @@ const COLOR_MAP = {
 
 const EMOJIS = ['🗳️', '💬', '🔥', '⚽', '🍜', '🏔️', '🍫', '🍎', '🤔', '😎', '💡', '🚨', '👾', '🚀'];
 
+const DUMMY_OPINIONS: Opinion[] = [
+  {
+    id: 'dummy-op-1',
+    name: '민초사관',
+    content: '민초는 치약이 아닙니다! 상큼하고 깔끔한 초코의 맛, 인류 최고의 발명품입니다 🍫🌱',
+    color: 'green',
+    emoji: '🍫',
+    likes: 42,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'dummy-op-2',
+    name: '축구사랑',
+    content: '박지성의 미친 체력과 헌신, 손흥민의 월드클래스 감아차기... 둘의 전성기를 다 보다니 영광입니다! ⚽',
+    color: 'blue',
+    emoji: '⚽',
+    likes: 31,
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'dummy-op-3',
+    name: '진격의부먹',
+    content: '탕수육은 원래 소스를 부어서 튀김옷의 눅눅함과 쫀득함을 조화롭게 먹는 고급 요리입니다. 부먹 승리! 🫗',
+    color: 'orange',
+    emoji: '🍜',
+    likes: 15,
+    createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'dummy-op-4',
+    name: '애플조아',
+    content: '맥북으로 작업하다가 아이패드로 필기하고 아이폰으로 전화 받으면 애플 생태계에서 영원히 나갈 수 없어요 🍎',
+    color: 'purple',
+    emoji: '🍎',
+    likes: 24,
+    createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
 export default function OpinionsPage() {
   const [name, setName] = useState('익명 토론러');
   const [content, setContent] = useState('');
@@ -47,6 +87,53 @@ export default function OpinionsPage() {
   const [opinions, setOpinions] = useState<Opinion[]>([]);
   const [likedIds, setLikedIds] = useState<string[]>([]);
   const [showToast, setShowToast] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 의견 데이터 로드 함수
+  const loadOpinions = async () => {
+    setIsLoading(true);
+    let list: Opinion[] = [];
+
+    // 1. Supabase 사용 가능 시 시도
+    if (canUseSupabase()) {
+      try {
+        const dbList = await dbFetchOpinions();
+        if (dbList && dbList.length > 0) {
+          list = dbList;
+        }
+      } catch (err) {
+        console.warn('[Supabase] Opinions 조회 에러, 로컬로 폴백:', err);
+      }
+    }
+
+    // 2. 데이터가 비어있거나 Supabase가 불가능하면 로컬 스토리지 확인
+    if (list.length === 0) {
+      const stored = localStorage.getItem('bangtoron_opinions');
+      if (stored) {
+        try {
+          list = JSON.parse(stored);
+        } catch {
+          // 무시
+        }
+      }
+    }
+
+    // 3. 둘 다 비어있으면 더미 세팅
+    if (list.length === 0) {
+      list = DUMMY_OPINIONS;
+      localStorage.setItem('bangtoron_opinions', JSON.stringify(list));
+      
+      // DB가 동작 중이면 더미 데이터도 백그라운드 등록 시도
+      if (canUseSupabase()) {
+        DUMMY_OPINIONS.forEach((op) => {
+          dbCreateOpinion(op).catch(() => {});
+        });
+      }
+    }
+
+    setOpinions(list);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     // 닉네임 기본 세팅
@@ -65,60 +152,10 @@ export default function OpinionsPage() {
       }
     }
 
-    // 의견 목록 로컬 스토리지에서 읽기
-    const stored = localStorage.getItem('bangtoron_opinions');
-    if (stored) {
-      try {
-        setOpinions(JSON.parse(stored));
-      } catch {
-        // 무시
-      }
-    } else {
-      // 기본 더미 데이터
-      const dummies: Opinion[] = [
-        {
-          id: 'dummy-op-1',
-          name: '민초사관',
-          content: '민초는 치약이 아닙니다! 상큼하고 깔끔한 초코의 맛, 인류 최고의 발명품입니다 🍫🌱',
-          color: 'green',
-          emoji: '🍫',
-          likes: 42,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: 'dummy-op-2',
-          name: '축구사랑',
-          content: '박지성의 미친 체력과 헌신, 손흥민의 월드클래스 감아차기... 둘의 전성기를 다 보다니 영광입니다! ⚽',
-          color: 'blue',
-          emoji: '⚽',
-          likes: 31,
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: 'dummy-op-3',
-          name: '진격의부먹',
-          content: '탕수육은 원래 소스를 부어서 튀김옷의 눅눅함과 쫀득함을 조화롭게 먹는 고급 요리입니다. 부먹 승리! 🫗',
-          color: 'orange',
-          emoji: '🍜',
-          likes: 15,
-          createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: 'dummy-op-4',
-          name: '애플조아',
-          content: '맥북으로 작업하다가 아이패드로 필기하고 아이폰으로 전화 받으면 애플 생태계에서 영원히 나갈 수 없어요 🍎',
-          color: 'purple',
-          emoji: '🍎',
-          likes: 24,
-          createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-      setOpinions(dummies);
-      localStorage.setItem('bangtoron_opinions', JSON.stringify(dummies));
-    }
+    loadOpinions();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !content.trim()) return;
 
@@ -132,9 +169,21 @@ export default function OpinionsPage() {
       createdAt: new Date().toISOString(),
     };
 
+    // 로컬 상태 즉시 업데이트 (낙관적 UI)
     const updated = [newOpinion, ...opinions];
     setOpinions(updated);
+
+    // 1. 로컬 저장
     localStorage.setItem('bangtoron_opinions', JSON.stringify(updated));
+
+    // 2. Supabase 저장 시도
+    if (canUseSupabase()) {
+      try {
+        await dbCreateOpinion(newOpinion);
+      } catch (err) {
+        console.warn('[Supabase] 의견 업로드 실패:', err);
+      }
+    }
 
     // 입력창 비우기
     setContent('');
@@ -148,29 +197,34 @@ export default function OpinionsPage() {
     setTimeout(() => setShowToast(false), 2000);
   };
 
-  const handleLike = (id: string) => {
-    if (likedIds.includes(id)) {
-      // 이미 좋아요 누름 -> 취소
-      const nextLikes = likedIds.filter((item) => item !== id);
-      setLikedIds(nextLikes);
-      sessionStorage.setItem('bangtoron_liked_opinions', JSON.stringify(nextLikes));
+  const handleLike = async (id: string) => {
+    const hasLiked = likedIds.includes(id);
+    let nextLikes: string[];
 
-      const updated = opinions.map((op) =>
-        op.id === id ? { ...op, likes: Math.max(0, op.likes - 1) } : op
-      );
-      setOpinions(updated);
-      localStorage.setItem('bangtoron_opinions', JSON.stringify(updated));
+    if (hasLiked) {
+      nextLikes = likedIds.filter((item) => item !== id);
     } else {
-      // 좋아요 추가
-      const nextLikes = [...likedIds, id];
-      setLikedIds(nextLikes);
-      sessionStorage.setItem('bangtoron_liked_opinions', JSON.stringify(nextLikes));
+      nextLikes = [...likedIds, id];
+    }
 
-      const updated = opinions.map((op) =>
-        op.id === id ? { ...op, likes: op.likes + 1 } : op
-      );
-      setOpinions(updated);
-      localStorage.setItem('bangtoron_opinions', JSON.stringify(updated));
+    // 1. 좋아요 기록 세션 스토리지 업데이트
+    setLikedIds(nextLikes);
+    sessionStorage.setItem('bangtoron_liked_opinions', JSON.stringify(nextLikes));
+
+    // 2. 로컬 의견 리스트 및 로컬 스토리지 업데이트
+    const updated = opinions.map((op) =>
+      op.id === id ? { ...op, likes: Math.max(0, op.likes + (hasLiked ? -1 : 1)) } : op
+    );
+    setOpinions(updated);
+    localStorage.setItem('bangtoron_opinions', JSON.stringify(updated));
+
+    // 3. Supabase 데이터베이스 동기화
+    if (canUseSupabase()) {
+      try {
+        await dbLikeOpinion(id, !hasLiked);
+      } catch (err) {
+        console.warn('[Supabase] 좋아요 통신 실패:', err);
+      }
     }
   };
 
@@ -302,13 +356,18 @@ export default function OpinionsPage() {
           </span>
         </div>
 
-        {opinions.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20 text-text-muted">
+            <div className="inline-block w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
+            <p className="font-semibold text-sm">실시간 한줄 발언대 불러오는 중...</p>
+          </div>
+        ) : opinions.length === 0 ? (
           <div className="glass-card text-center py-20 text-text-muted">
             <p className="text-4xl mb-4">💬</p>
             <p className="font-semibold text-lg">첫 번째 한줄 의견의 주인공이 되어보세요!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-scale-in">
             {opinions.map((op) => {
               const theme = COLOR_MAP[op.color] || COLOR_MAP.blue;
               const hasLiked = likedIds.includes(op.id);
@@ -316,7 +375,7 @@ export default function OpinionsPage() {
               return (
                 <div
                   key={op.id}
-                  className={`glass-card p-5 border flex flex-col justify-between transition-all hover:scale-[1.01] hover:shadow-md animate-fade-in-up ${theme.card}`}
+                  className={`glass-card p-5 border flex flex-col justify-between transition-all hover:scale-[1.01] hover:shadow-md ${theme.card}`}
                 >
                   <div className="space-y-3.5">
                     {/* Top Row: Emoji & User */}
