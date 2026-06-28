@@ -1,0 +1,3 @@
+# Google AdSense ads.txt
+# 구글 애드센스 승인 후 아래의 xxxxxxxxxxxxxxxx를 본인의 퍼블리셔 ID로 변경하여 사용하세요.
+# google.com, pub-xxxxxxxxxxxxxxxx, DIRECT, f08c47fec0942fa0

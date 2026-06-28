@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import Link from "next/link";
+import Script from "next/script";
 
 const notoSansKR = Noto_Sans_KR({
   variable: "--font-noto-sans",
@@ -39,11 +41,34 @@ export default function RootLayout({
       className={`${notoSansKR.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className="min-h-screen flex flex-col antialiased">
         <Header />
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-border py-6 text-center text-sm text-text-secondary">
-          <div className="max-w-7xl mx-auto px-4">
+        <footer className="border-t border-border py-8 text-center text-sm text-text-secondary bg-surface-hover/30">
+          <div className="max-w-7xl mx-auto px-4 space-y-3">
+            <div className="flex justify-center gap-4 text-xs font-semibold text-text-muted">
+              <Link href="/privacy" className="hover:text-primary transition-colors">
+                개인정보처리방침
+              </Link>
+              <span>·</span>
+              <Link href="/terms" className="hover:text-primary transition-colors">
+                이용약관
+              </Link>
+              <span>·</span>
+              <Link href="/contact" className="hover:text-primary transition-colors">
+                고객센터
+              </Link>
+            </div>
             <p>© 2026 방구석 백분토론. 모든 논쟁은 투표로 해결합니다. 🗳️</p>
           </div>
         </footer>
