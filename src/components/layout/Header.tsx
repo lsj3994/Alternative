@@ -66,6 +66,14 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-2">
           <Link
+            href="/about"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
+            id="nav-about"
+          >
+            <Info size={16} />
+            소개
+          </Link>
+          <Link
             href="/"
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
             id="nav-home"
@@ -80,14 +88,6 @@ export default function Header() {
           >
             <MessageSquare size={16} />
             한줄 의견
-          </Link>
-          <Link
-            href="/about"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary-light transition-all"
-            id="nav-about"
-          >
-            <Info size={16} />
-            소개
           </Link>
           <Link
             href="/contact"
@@ -199,6 +199,15 @@ export default function Header() {
         <div className="md:hidden glass-card border-t border-border animate-fade-in-down">
           <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-2">
             <Link
+              href="/about"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+              id="mobile-nav-about"
+            >
+              <Info size={16} />
+              소개
+            </Link>
+            <Link
               href="/"
               className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
               onClick={() => setIsMenuOpen(false)}
@@ -214,15 +223,6 @@ export default function Header() {
             >
               <MessageSquare size={16} />
               한줄 의견
-            </Link>
-            <Link
-              href="/about"
-              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium hover:bg-surface-hover transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-              id="mobile-nav-about"
-            >
-              <Info size={16} />
-              소개
             </Link>
             <Link
               href="/contact"

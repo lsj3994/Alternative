@@ -4,6 +4,30 @@ import Link from 'next/link';
 import { Info, HelpCircle, Code, MessageSquarePlus, Share2, ArrowRight } from 'lucide-react';
 
 export default function AboutPage() {
+  const handleShare = async () => {
+    if (typeof window === 'undefined') return;
+    const shareUrl = window.location.origin;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '방구석 백분토론',
+          text: '당신의 한 표가 인터넷 논쟁의 역사를 바꿉니다! 방구석 백분토론에서 투표하고 토론해보세요!',
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.log('Share cancelled or failed:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('링크가 클립보드에 복사되었습니다! 카카오톡이나 SNS에 공유해보세요. 🗳️');
+      } catch (err) {
+        alert('링크 복사에 실패했습니다. 주소창의 링크를 복사하여 공유해주세요!');
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 md:py-20">
       {/* Hero Section */}
@@ -72,11 +96,14 @@ export default function AboutPage() {
             보완점 의견 제출하기
             <ArrowRight size={14} />
           </Link>
-          {/* Share Notice */}
-          <div className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-surface border border-border text-text-primary font-bold text-sm transition-all hover:bg-surface-hover hover:scale-[1.02] active:scale-[0.98]">
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-surface border border-border text-text-primary font-bold text-sm transition-all hover:bg-surface-hover hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          >
             <Share2 size={16} className="text-accent" />
             많은 홍보 부탁드립니다!
-          </div>
+          </button>
         </div>
       </div>
 
