@@ -6,6 +6,7 @@ import PollCard from '@/components/poll/PollCard';
 import RotatingText from '@/components/ui/RotatingText';
 import { DUMMY_POLLS, CATEGORIES, fetchAllPolls } from '@/lib/data';
 import { Poll } from '@/lib/types';
+import { isPollActive } from '@/lib/poll-utils';
 
 type SortMode = 'popular' | 'latest' | 'active';
 
@@ -86,8 +87,11 @@ export default function HomePage() {
     if (sortMode === 'popular') return b.totalVotes - a.totalVotes;
     if (sortMode === 'latest')
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    
     // active: active first, then by votes
-    if (a.status !== b.status) return a.status === 'active' ? -1 : 1;
+    const aActive = isPollActive(a);
+    const bActive = isPollActive(b);
+    if (aActive !== bActive) return aActive ? -1 : 1;
     return b.totalVotes - a.totalVotes;
   });
 

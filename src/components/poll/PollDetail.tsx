@@ -14,6 +14,7 @@ import {
   cancelVote,
 } from '@/lib/store';
 import VoteResultBar from './VoteResultBar';
+import { isPollActive, getRemainingTimeText } from '@/lib/poll-utils';
 import { CheckCircle2, Vote } from 'lucide-react';
 
 interface PollDetailProps {
@@ -33,15 +34,16 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
 
   const isAdminDeleted = poll.description?.startsWith('[ADMIN_DELETED]:') || false;
   const adminComment = isAdminDeleted ? poll.description?.substring('[ADMIN_DELETED]:'.length) : '';
+  const isActive = isPollActive(poll);
 
   useEffect(() => {
     const voted = getVotedOptions(poll.id);
-    if (voted.length > 0 || isAdminDeleted) {
+    if (voted.length > 0 || isAdminDeleted || !isActive) {
       setInitialVotedIds(voted);
       setVotedOptionIds(voted);
       setShowResults(true);
     }
-  }, [poll.id, isAdminDeleted]);
+  }, [poll.id, isAdminDeleted, isActive]);
 
   const handleCancelVote = () => {
     if (confirm('투표를 취소하고 다시 선택하시겠습니까?')) {
@@ -137,10 +139,15 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
           </p>
         )}
         <div className="mt-3 flex items-center gap-3 text-sm text-text-muted">
-          <span className={`badge ${isAdminDeleted ? 'bg-danger text-white' : poll.status === 'active' ? 'badge-live' : 'badge-closed'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isAdminDeleted ? 'bg-white' : poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'}`} />
-            {isAdminDeleted ? '삭제됨' : poll.status === 'active' ? '진행중' : '종료'}
+          <span className={`badge ${isAdminDeleted ? 'bg-danger text-white' : isActive ? 'badge-live' : 'badge-closed'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isAdminDeleted ? 'bg-white' : isActive ? 'bg-success animate-pulse-soft' : 'bg-danger'}`} />
+            {isAdminDeleted ? '삭제됨' : isActive ? '진행중' : '종료'}
           </span>
+          {!isAdminDeleted && (
+            <span className="text-xs font-semibold text-text-secondary bg-surface-hover px-2.5 py-0.5 rounded-lg border border-border">
+              {getRemainingTimeText(poll.createdAt, poll.status)}
+            </span>
+          )}
           <span>총 {totalVotes.toLocaleString()}명 참여</span>
         </div>
       </div>
@@ -344,7 +351,7 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
       </div>
 
       {/* 결과 화면 - 투표 취소 버튼 (핑크색) */}
-      {showResults && !isAdminDeleted && (
+      {showResults && !isAdminDeleted && isActive && (
         <div className="mt-8 flex justify-center animate-fade-in">
           <button
             onClick={handleCancelVote}

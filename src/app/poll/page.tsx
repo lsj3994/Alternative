@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, BarChart3, Share2, Trash2, Edit3 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Share2, Trash2, Edit3, Lock } from 'lucide-react';
 import { getPollById, getPollComments, getPollStats, fetchPollById, fetchPollComments, fetchPollStats, deletePoll, updatePoll } from '@/lib/data';
 import { getVotedOptions, getUser, isLoggedIn, getDemographics } from '@/lib/store';
+import { isPollActive, isPollExpired } from '@/lib/poll-utils';
 import PollDetail from '@/components/poll/PollDetail';
 import CommentSection from '@/components/comment/CommentSection';
 import GenderPieChart from '@/components/stats/GenderPieChart';
@@ -233,6 +234,19 @@ function PollContent() {
     }
   };
 
+  const handleClose = async () => {
+    if (!poll) return;
+    if (confirm('이 투표를 마감하시겠습니까? 마감하면 더 이상 추가 투표를 할 수 없습니다.')) {
+      const res = await updatePoll(poll.id, { status: 'closed' });
+      if (res.success) {
+        alert('투표가 마감되었습니다.');
+        setPoll((prev) => prev ? { ...prev, status: 'closed' } : undefined);
+      } else {
+        alert(`마감 실패: ${res.error}`);
+      }
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
       {/* Header Actions */}
@@ -248,6 +262,15 @@ function PollContent() {
 
         {isCreator && (
           <div className="flex items-center gap-2">
+            {poll.status === 'active' && !isPollExpired(poll.createdAt) && (
+              <button
+                onClick={handleClose}
+                className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl bg-surface-hover text-text-secondary hover:text-warning transition-colors border border-border"
+              >
+                <Lock size={14} />
+                마감
+              </button>
+            )}
             <button
               onClick={() => router.push(`/edit?id=${poll.id}`)}
               className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-xl bg-surface-hover text-text-secondary hover:text-primary transition-colors border border-border"

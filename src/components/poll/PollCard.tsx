@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Users, Clock, TrendingUp } from 'lucide-react';
 import { Poll } from '@/lib/types';
+import { isPollActive } from '@/lib/poll-utils';
 
 interface PollCardProps {
   poll: Poll;
@@ -29,6 +30,7 @@ function timeAgo(dateString: string): string {
 
 export default function PollCard({ poll, index = 0 }: PollCardProps) {
   const isAdminDeleted = poll.description?.startsWith('[ADMIN_DELETED]:');
+  const isActive = isPollActive(poll);
   const adminComment = isAdminDeleted ? poll.description?.substring('[ADMIN_DELETED]:'.length) : '';
 
   const leadingOption = !isAdminDeleted && poll.options && poll.options.length > 0
@@ -65,15 +67,15 @@ export default function PollCard({ poll, index = 0 }: PollCardProps) {
         <div className="absolute top-3 left-3">
           <span
             className={`badge ${
-              isAdminDeleted ? 'bg-danger text-white' : poll.status === 'active' ? 'badge-live' : 'badge-closed'
+              isAdminDeleted ? 'bg-danger text-white' : isActive ? 'badge-live' : 'badge-closed'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isAdminDeleted ? 'bg-white' : poll.status === 'active' ? 'bg-success animate-pulse-soft' : 'bg-danger'
+                isAdminDeleted ? 'bg-white' : isActive ? 'bg-success animate-pulse-soft' : 'bg-danger'
               }`}
             />
-            {isAdminDeleted ? '삭제됨' : poll.status === 'active' ? '진행중' : '종료'}
+            {isAdminDeleted ? '삭제됨' : isActive ? '진행중' : '종료'}
           </span>
         </div>
 
