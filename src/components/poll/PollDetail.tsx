@@ -12,6 +12,7 @@ import {
   canVoteMore,
   getMaxVotes,
   cancelVote,
+  syncVotedOptions,
 } from '@/lib/store';
 import VoteResultBar from './VoteResultBar';
 import { isPollActive, getRemainingTimeText } from '@/lib/poll-utils';
@@ -37,12 +38,29 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
   const isActive = isPollActive(poll);
 
   useEffect(() => {
-    const voted = getVotedOptions(poll.id);
-    if (voted.length > 0 || isAdminDeleted || !isActive) {
-      setInitialVotedIds(voted);
-      setVotedOptionIds(voted);
-      setShowResults(true);
-    }
+    const loadVoted = async () => {
+      let voted = getVotedOptions(poll.id);
+      
+      // 로그인된 회원인 경우 Supabase에서 투표 내역 동기화
+      if (isLoggedIn()) {
+        const user = getUser();
+        if (user) {
+          try {
+            voted = await syncVotedOptions(poll.id, user.id);
+          } catch (err) {
+            console.warn('투표 내역 동기화 실패:', err);
+          }
+        }
+      }
+      
+      if (voted.length > 0 || isAdminDeleted || !isActive) {
+        setInitialVotedIds(voted);
+        setVotedOptionIds(voted);
+        setShowResults(true);
+      }
+    };
+    
+    loadVoted();
   }, [poll.id, isAdminDeleted, isActive]);
 
   const handleCancelVote = () => {
@@ -350,8 +368,8 @@ export default function PollDetail({ poll, onVote, onCancel, onNeedSignup }: Pol
         )}
       </div>
 
-      {/* 결과 화면 - 투표 취소 버튼 (핑크색) */}
-      {showResults && !isAdminDeleted && isActive && (
+      {/* 결과 화면 - 투표 취소 버튼 (핑크색 - 회원 전용) */}
+      {showResults && !isAdminDeleted && isActive && isLoggedIn() && (
         <div className="mt-8 flex justify-center animate-fade-in">
           <button
             onClick={handleCancelVote}
