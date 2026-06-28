@@ -213,9 +213,9 @@ export default function ContactPage() {
 
           <div className="glass-card p-6 border border-border/40 text-sm text-text-secondary space-y-2">
             <h3 className="font-bold text-base text-text-primary mb-2">운영 안내</h3>
-            <p>💻 운영진 메일: support@bangtoron.com</p>
-            <p>⏰ 평일: 오전 10시 ~ 오후 6시</p>
-            <p>💡 주말 및 공휴일 접수 건은 다음 영업일에 순차적으로 답변드립니다.</p>
+            <p>💻 문의 메일: <a href="mailto:life.is.good@kakao.com" className="text-primary hover:underline font-semibold">life.is.good@kakao.com</a></p>
+            <p>💡 본 웹사이트는 개인이 취미 활동으로 제작하여 운영하고 있습니다. 이에 따라 서비스 유지 보수 및 접수된 문의에 대한 답변 제공에 시간이 다소 소요될 수 있는 점 양해 부탁드립니다.</p>
+            <p>🤝 홈페이지 제휴 및 협업 관련 문의는 위의 이메일 주소로 직접 내용을 정리하여 보내 주시기 바랍니다.</p>
           </div>
         </section>
       </div>
